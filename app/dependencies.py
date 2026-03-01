@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
+from app.models.user import UserRole
 
 
 async def get_current_user(request) -> User:
@@ -37,3 +38,7 @@ def require_roles(*roles):
             )
         return user
     return check_roles
+
+
+require_admin = require_roles(UserRole.ADMIN)
+require_auditor_or_admin = require_roles(UserRole.ADMIN, UserRole.AUDITOR)

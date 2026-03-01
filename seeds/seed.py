@@ -22,6 +22,7 @@ from app.models import (
     Project,
     ProjectStatus,
 )
+from app.models.user import UserRole
 from app.utils.security import hash_password
 
 
@@ -74,6 +75,24 @@ def seed_database():
             db.add(admin_user)
             db.commit()
             print("✓ Created admin user: admin@themis.local / admin123")
+
+        # Check if auditor user exists
+        auditor_user = db.query(User).filter(User.email == "auditor@themis.local").first()
+        if auditor_user:
+            print("✓ Auditor user already exists")
+        else:
+            auditor_user = User(
+                id=uuid.uuid4(),
+                tenant_id=tenant_id,
+                email="auditor@themis.local",
+                password_hash=hash_password("auditor123"),
+                full_name="Test Auditor",
+                role=UserRole.AUDITOR,
+                is_active=True,
+            )
+            db.add(auditor_user)
+            db.commit()
+            print("✓ Created auditor user: auditor@themis.local / auditor123")
 
         # Check if clients already exist
         existing_clients = db.query(Client).filter(
@@ -513,12 +532,13 @@ def seed_database():
         ).count()
 
         if existing_projects == 0 and acme_id and iso_framework_id:
-            # Create projects
+            # Create projects (admin user is owner)
             project1 = Project(
                 id=uuid.uuid4(),
                 tenant_id=tenant_id,
                 client_id=acme_id,
                 framework_id=iso_framework_id,
+                owner_id=admin_user.id,
                 name="Acme ISO 27001 Assessment",
                 description="ISO 27001 compliance assessment for Acme Corp",
                 status=ProjectStatus.IN_PROGRESS,
@@ -530,6 +550,7 @@ def seed_database():
                     tenant_id=tenant_id,
                     client_id=beta_id,
                     framework_id=soc2_framework_id,
+                    owner_id=admin_user.id,
                     name="Beta SOC 2 Readiness",
                     description="SOC 2 Type II readiness assessment for Beta Ltd",
                     status=ProjectStatus.DRAFT,
@@ -541,7 +562,18 @@ def seed_database():
             db.commit()
             print("✓ Created projects")
         else:
-            print("✓ Projects already exist")
+            # Back-fill owner_id on existing projects that lack it
+            projects_without_owner = db.query(Project).filter(
+                Project.tenant_id == tenant_id,
+                Project.owner_id.is_(None),
+            ).all()
+            if projects_without_owner:
+                for p in projects_without_owner:
+                    p.owner_id = admin_user.id
+                db.commit()
+                print(f"✓ Back-filled owner_id on {len(projects_without_owner)} existing project(s)")
+            else:
+                print("✓ Projects already exist")
 
         print("\n✅ Database seeded successfully!")
 

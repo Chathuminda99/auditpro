@@ -7,11 +7,17 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Client
+from app.models.user import UserRole
 from app.repositories import ClientRepository
 
 router = APIRouter(prefix="/clients", tags=["clients"])
 from app.templates import templates
 from app.utils.htmx import htmx_toast
+
+
+def _require_admin(user) -> bool:
+    """Return False (and caller should redirect) if user is not admin."""
+    return user is not None and user.role == UserRole.ADMIN
 
 
 @router.get("", response_class=HTMLResponse)
@@ -22,6 +28,8 @@ async def list_clients(
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    if not _require_admin(user):
+        return RedirectResponse(url="/dashboard", status_code=302)
 
     repo = ClientRepository(db)
 
@@ -69,6 +77,8 @@ async def new_client_form(request: Request, db: Session = Depends(get_db)):
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    if not _require_admin(user):
+        return RedirectResponse(url="/dashboard", status_code=302)
 
     return templates.TemplateResponse(
         "clients/_form.html",
@@ -86,6 +96,8 @@ async def create_client(request: Request, db: Session = Depends(get_db)):
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    if not _require_admin(user):
+        return RedirectResponse(url="/dashboard", status_code=302)
 
     form_data = await request.form()
 
@@ -118,6 +130,8 @@ async def update_client(
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    if not _require_admin(user):
+        return RedirectResponse(url="/dashboard", status_code=302)
 
     form_data = await request.form()
 
@@ -154,6 +168,8 @@ async def delete_client(
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    if not _require_admin(user):
+        return RedirectResponse(url="/dashboard", status_code=302)
 
     repo = ClientRepository(db)
     success = repo.delete(user.tenant_id, client_id)
@@ -194,6 +210,8 @@ async def edit_client_form_detail(
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    if not _require_admin(user):
+        return RedirectResponse(url="/dashboard", status_code=302)
 
     repo = ClientRepository(db)
     client = repo.get_by_id(user.tenant_id, client_id)
@@ -219,6 +237,8 @@ async def detail_client(
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    if not _require_admin(user):
+        return RedirectResponse(url="/dashboard", status_code=302)
 
     repo = ClientRepository(db)
     client = repo.get_by_id(user.tenant_id, client_id)

@@ -1,0 +1,76 @@
+<!-- User create/edit form (modal content) -->
+<div class="p-6">
+  <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-1">
+    {% if edit_user %}Edit User{% else %}Invite User{% endif %}
+  </h2>
+  <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
+    {% if edit_user %}Update role, name, or status.{% else %}Create a new user account.{% endif %}
+  </p>
+
+  {% if error %}
+  <div class="mb-4 px-4 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-400 text-sm">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  {% if edit_user %}
+  <form hx-post="/admin/users/{{ edit_user.id }}" hx-target="#users-table-container" hx-swap="innerHTML" @submit="$store.modal.hide()">
+  {% else %}
+  <form hx-post="/admin/users" hx-target="#users-table-container" hx-swap="innerHTML" @submit="$store.modal.hide()">
+  {% endif %}
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Full Name <span class="text-red-500">*</span></label>
+        <input type="text" name="full_name" value="{{ edit_user.full_name if edit_user else '' }}" required
+          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+          placeholder="Jane Smith">
+      </div>
+
+      {% if not edit_user %}
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Email <span class="text-red-500">*</span></label>
+        <input type="email" name="email" required
+          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+          placeholder="jane@example.com">
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Temporary Password <span class="text-red-500">*</span></label>
+        <input type="password" name="password" required
+          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
+          placeholder="••••••••">
+      </div>
+      {% endif %}
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Role</label>
+        <select name="role"
+          class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow">
+          <option value="auditor" {% if not edit_user or edit_user.role.value == 'auditor' %}selected{% endif %}>Auditor</option>
+          <option value="admin" {% if edit_user and edit_user.role.value == 'admin' %}selected{% endif %}>Admin</option>
+        </select>
+      </div>
+
+      {% if edit_user %}
+      <div class="flex items-center gap-3">
+        <input type="checkbox" name="is_active" id="is_active_check" value="on"
+          {% if edit_user.is_active %}checked{% endif %}
+          class="w-4 h-4 rounded border-slate-300 dark:border-slate-600 text-primary focus:ring-primary/50">
+        <label for="is_active_check" class="text-sm font-semibold text-slate-700 dark:text-slate-300">Active</label>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+      <button type="button" @click="$store.modal.hide()"
+        class="px-4 py-2 text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">
+        Cancel
+      </button>
+      <button type="submit"
+        class="px-5 py-2 bg-primary text-white text-sm font-bold rounded-lg hover:bg-primary/90 transition-colors">
+        {% if edit_user %}Save Changes{% else %}Create User{% endif %}
+      </button>
+    </div>
+  </form>
+</div>

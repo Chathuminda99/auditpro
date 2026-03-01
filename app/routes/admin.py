@@ -4,6 +4,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from sqlalchemy.orm import Session
 from app.database import get_db
+from app.models.user import UserRole
 from app.repositories.framework import FrameworkRepository
 
 from app.templates import templates
@@ -97,6 +98,8 @@ async def list_controls(request: Request, db: Session = Depends(get_db)):
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    if user.role != UserRole.ADMIN:
+        return RedirectResponse(url="/dashboard", status_code=302)
 
     # Fetch all frameworks with controls
     framework_repo = FrameworkRepository(db)
@@ -129,6 +132,8 @@ async def edit_control(control_id: str, request: Request, db: Session = Depends(
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    if user.role != UserRole.ADMIN:
+        return RedirectResponse(url="/dashboard", status_code=302)
 
     # Find the control
     framework_repo = FrameworkRepository(db)
@@ -179,6 +184,8 @@ async def save_control(
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
+    if user.role != UserRole.ADMIN:
+        return RedirectResponse(url="/dashboard", status_code=302)
 
     # Find and update the control
     framework_repo = FrameworkRepository(db)

@@ -1,8 +1,12 @@
 import uuid
 from enum import Enum
+from typing import TYPE_CHECKING
 from sqlalchemy import String, Text, Enum as SQLEnum, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class ProjectStatus(str, Enum):
@@ -41,6 +45,9 @@ class Project(BaseModel, TimestampMixin):
     parent_project_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("projects.id"), nullable=True
     )
+    owner_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=True)
     status: Mapped[ProjectStatus] = mapped_column(
@@ -50,6 +57,10 @@ class Project(BaseModel, TimestampMixin):
     # Relationships
     client: Mapped["Client"] = relationship()
     framework: Mapped["Framework"] = relationship()
+    owner: Mapped["User | None"] = relationship("User", foreign_keys=[owner_id])
+    members: Mapped[list["ProjectMember"]] = relationship(
+        "ProjectMember", cascade="all, delete-orphan", back_populates="project"
+    )
     responses: Mapped[list["ProjectResponse"]] = relationship(
         "ProjectResponse", cascade="all, delete-orphan"
     )
@@ -78,7 +89,11 @@ class ProjectMember(BaseModel, TimestampMixin):
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id"), nullable=False
     )
-    role: Mapped[str] = mapped_column(String(50), nullable=False)
+    role: Mapped[str] = mapped_column(String(50), nullable=False, default="auditor")
+
+    # Relationships
+    project: Mapped["Project"] = relationship("Project", back_populates="members")
+    user: Mapped["User"] = relationship("User", foreign_keys=[user_id])
 
 
 class ProjectResponse(BaseModel, TimestampMixin):

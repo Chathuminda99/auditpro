@@ -4,7 +4,7 @@
 <aside class="bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transition-all duration-300 ease-in-out sidebar-fixed"
     :class="sidebarOpen ? 'w-64' : 'w-20'">
     <!-- Sidebar Header -->
-    <div class="p-4 flex items-center gap-3 border-b border-slate-200 dark:border-slate-800" :class="sidebarOpen ? 'justify-start' : 'justify-center'">
+    <div class="p-4 flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800" :class="sidebarOpen ? 'justify-start' : 'justify-center'">
         <div class="bg-primary p-2 rounded-lg text-white flex-shrink-0">
             {{ icon_macro.icon('shield', 'white', '20') }}
         </div>
@@ -18,9 +18,9 @@
     <nav class="flex-1 overflow-y-auto px-2 py-4 space-y-0.5">
         <!-- Dashboard -->
         <a href="/dashboard" title="Dashboard"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% if request.url.path == '/dashboard' %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors {% if request.url.path == '/dashboard' %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
             :class="sidebarOpen ? 'justify-start' : 'justify-center'">
-            <span class="flex-shrink-0">{{ icon_macro.icon('home', 'currentColor', '18') }}</span>
+            <span class="flex-shrink-0">{{ icon_macro.icon('home', 'currentColor', '20') }}</span>
             <span x-show="sidebarOpen" x-transition.opacity class="text-sm font-semibold tracking-wide">Dashboard</span>
         </a>
 
@@ -31,9 +31,9 @@
 
         <!-- Projects -->
         <a href="/projects" title="Projects"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% if request.url.path.startswith('/projects') %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors {% if request.url.path.startswith('/projects') %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
             :class="sidebarOpen ? 'justify-start' : 'justify-center'">
-            <span class="flex-shrink-0">{{ icon_macro.icon('briefcase', 'currentColor', '18') }}</span>
+            <span class="flex-shrink-0">{{ icon_macro.icon('briefcase', 'currentColor', '20') }}</span>
             <span x-show="sidebarOpen" x-transition.opacity class="text-sm font-semibold tracking-wide">Projects</span>
         </a>
 
@@ -44,29 +44,32 @@
 
         <!-- Frameworks -->
         <a href="/frameworks" title="Frameworks"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% if request.url.path.startswith('/frameworks') %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors {% if request.url.path.startswith('/frameworks') %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
             :class="sidebarOpen ? 'justify-start' : 'justify-center'">
-            <svg xmlns="http://www.w3.org/2000/svg" height="18" width="18" viewBox="0 0 24 24" fill="currentColor" class="flex-shrink-0"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" height="20" width="20" viewBox="0 0 24 24" fill="currentColor" class="flex-shrink-0"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
             <span x-show="sidebarOpen" x-transition.opacity class="text-sm font-semibold tracking-wide">Frameworks</span>
         </a>
 
-        <!-- Clients -->
+        {% if user and user.role.value == 'admin' %}
+        <!-- Clients (admin only) -->
         <a href="/clients" title="Clients"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% if request.url.path.startswith('/clients') %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors {% if request.url.path.startswith('/clients') %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
             :class="sidebarOpen ? 'justify-start' : 'justify-center'">
-            <span class="flex-shrink-0">{{ icon_macro.icon('users', 'currentColor', '18') }}</span>
+            <span class="flex-shrink-0">{{ icon_macro.icon('users', 'currentColor', '20') }}</span>
             <span x-show="sidebarOpen" x-transition.opacity class="text-sm font-semibold tracking-wide">Clients</span>
         </a>
+        {% endif %}
 
         <!-- Reports (Coming Soon) -->
         <a href="#" title="Reports (Coming Soon)"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 dark:text-slate-500 transition-colors cursor-not-allowed"
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-400 dark:text-slate-500 transition-colors cursor-not-allowed"
             :class="sidebarOpen ? 'justify-start' : 'justify-center'">
-            <span class="flex-shrink-0">{{ icon_macro.icon('chart', 'currentColor', '18') }}</span>
+            <span class="flex-shrink-0">{{ icon_macro.icon('chart', 'currentColor', '20') }}</span>
             <span x-show="sidebarOpen" x-transition.opacity class="text-sm font-semibold tracking-wide flex-1">Reports</span>
             <span x-show="sidebarOpen" x-transition.opacity class="text-[10px] py-0.5 px-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500">SOON</span>
         </a>
 
+        {% if user and user.role.value == 'admin' %}
         <!-- Admin Section -->
         <div x-show="sidebarOpen" x-transition.opacity class="px-3 py-3 mt-4">
             <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Admin</p>
@@ -74,26 +77,35 @@
 
         <!-- Controls (Template Management) -->
         <a href="/admin/controls" title="Controls"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors {% if request.url.path.startswith('/admin/controls') %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors {% if request.url.path.startswith('/admin/controls') %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
             :class="sidebarOpen ? 'justify-start' : 'justify-center'">
-            <span class="flex-shrink-0">{{ icon_macro.icon('clipboard-list', 'currentColor', '18') }}</span>
+            <span class="flex-shrink-0">{{ icon_macro.icon('clipboard-list', 'currentColor', '20') }}</span>
             <span x-show="sidebarOpen" x-transition.opacity class="text-sm font-semibold tracking-wide">Controls</span>
         </a>
+
+        <!-- Users (User Management) -->
+        <a href="/admin/users" title="Users"
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg transition-colors {% if request.url.path.startswith('/admin/users') %}bg-primary text-white{% else %}text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary{% endif %}"
+            :class="sidebarOpen ? 'justify-start' : 'justify-center'">
+            <span class="flex-shrink-0">{{ icon_macro.icon('users', 'currentColor', '20') }}</span>
+            <span x-show="sidebarOpen" x-transition.opacity class="text-sm font-semibold tracking-wide">Users</span>
+        </a>
+        {% endif %}
     </nav>
 
     <!-- Sidebar Footer -->
     <div class="p-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
         <a href="#" title="Settings"
-            class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary transition-colors"
+            class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary transition-colors"
             :class="sidebarOpen ? 'justify-start' : 'justify-center'">
-            <span class="flex-shrink-0">{{ icon_macro.icon('sliders', 'currentColor', '18') }}</span>
+            <span class="flex-shrink-0">{{ icon_macro.icon('sliders', 'currentColor', '20') }}</span>
             <span x-show="sidebarOpen" x-transition.opacity class="text-sm font-semibold tracking-wide">Settings</span>
         </a>
         <!-- Sidebar toggler -->
         <button @click="sidebarOpen = !sidebarOpen" type="button"
-            class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary transition-colors"
+            class="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 dark:hover:bg-primary/15 hover:text-primary transition-colors"
             :class="sidebarOpen ? 'justify-start' : 'justify-center'" title="Collapse sidebar">
-            <span class="flex-shrink-0 transition-transform duration-300" :class="sidebarOpen ? 'rotate-180' : ''">{{ icon_macro.icon('chevron-right', 'currentColor', '18') }}</span>
+            <span class="flex-shrink-0 transition-transform duration-300" :class="sidebarOpen ? 'rotate-180' : ''">{{ icon_macro.icon('chevron-right', 'currentColor', '20') }}</span>
             <span x-show="sidebarOpen" x-transition.opacity class="text-sm font-semibold tracking-wide">Collapse</span>
         </button>
     </div>

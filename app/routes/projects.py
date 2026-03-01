@@ -16,7 +16,10 @@ from app.repositories import (
     FrameworkRepository,
     ProjectResponseRepository,
     WorkflowExecutionRepository,
+    UserRepository,
 )
+from app.models.project import ProjectMember
+from app.models.user import UserRole
 from app.services import workflow_engine
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -48,13 +51,14 @@ async def list_projects(
         except ValueError:
             pass
 
-    # Use filter_projects with optional criteria
+    # Use filter_projects with optional criteria (auditors see only own projects)
     projects = repo.filter_projects(
         user.tenant_id,
         status=status_enum,
         client_id=client_id if client_id and client_id.strip() else None,
         framework_id=framework_id if framework_id and framework_id.strip() else None,
         search=q,
+        user=user,
     )
 
     # Check if this is an HTMX request (filter update)
@@ -155,6 +159,7 @@ async def create_project(request: Request, db: Session = Depends(get_db)):
         name=name,
         description=form_data.get("description", ""),
         status=status,
+        owner_id=user.id,
     )
 
     # Refresh to get related objects
@@ -912,10 +917,14 @@ async def detail_project(
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
 
+    from app.utils.access import can_access_project
     repo = ProjectRepository(db)
     project = repo.get_by_id_with_details(user.tenant_id, project_id)
 
     if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    if not can_access_project(user, project):
         return RedirectResponse(url="/projects", status_code=302)
 
     # Check if this is a parent project with segments
@@ -1328,3 +1337,182 @@ async def delete_evidence(
         {"request": request, "observation": observation, "project_id": project_id},
     )
 
+
+
+# ---------------------------------------------------------------------------
+# Project sharing / membership endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/{project_id}/members", response_class=HTMLResponse)
+async def get_project_members(project_id: str, request: Request, db: Session = Depends(get_db)):
+    """Return share modal partial (list of members + auditor search)."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    from app.utils.access import can_access_project
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    if not project or not can_access_project(user, project):
+        return RedirectResponse(url="/projects", status_code=302)
+
+    # Only owner or admin may share
+    is_owner = str(project.owner_id) == str(user.id) or user.role == UserRole.ADMIN
+
+    user_repo = UserRepository(db)
+    auditors = user_repo.get_auditors(user.tenant_id)
+
+    return templates.TemplateResponse(
+        "projects/_share_modal.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "is_owner": is_owner,
+            "auditors": auditors,
+        },
+    )
+
+
+@router.post("/{project_id}/members", response_class=HTMLResponse)
+async def add_project_member(project_id: str, request: Request, db: Session = Depends(get_db)):
+    """Add a member to a project (owner or admin only)."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    from app.utils.access import can_access_project
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    if not project or not can_access_project(user, project):
+        return RedirectResponse(url="/projects", status_code=302)
+
+    is_owner = str(project.owner_id) == str(user.id) or user.role == UserRole.ADMIN
+    if not is_owner:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    form = await request.form()
+    member_user_id = (form.get("user_id") or "").strip()
+    if not member_user_id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    # Add member if not already present
+    existing = db.query(ProjectMember).filter(
+        ProjectMember.project_id == project.id,
+        ProjectMember.user_id == member_user_id,
+    ).first()
+    if not existing:
+        member = ProjectMember(
+            project_id=project.id,
+            user_id=member_user_id,
+            role="auditor",
+        )
+        db.add(member)
+        db.commit()
+
+    # Re-fetch and return updated modal
+    db.refresh(project)
+    user_repo = UserRepository(db)
+    auditors = user_repo.get_auditors(user.tenant_id)
+
+    return templates.TemplateResponse(
+        "projects/_share_modal.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "is_owner": True,
+            "auditors": auditors,
+            "success": "Member added.",
+        },
+        headers=htmx_toast("Member added successfully"),
+    )
+
+
+@router.delete("/{project_id}/members/{member_user_id}", response_class=HTMLResponse)
+async def remove_project_member(
+    project_id: str, member_user_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Remove a member from a project (owner or admin only)."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    from app.utils.access import can_access_project
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    if not project or not can_access_project(user, project):
+        return RedirectResponse(url="/projects", status_code=302)
+
+    is_owner = str(project.owner_id) == str(user.id) or user.role == UserRole.ADMIN
+    if not is_owner:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    db.query(ProjectMember).filter(
+        ProjectMember.project_id == project.id,
+        ProjectMember.user_id == member_user_id,
+    ).delete()
+    db.commit()
+
+    db.refresh(project)
+    user_repo = UserRepository(db)
+    auditors = user_repo.get_auditors(user.tenant_id)
+
+    return templates.TemplateResponse(
+        "projects/_share_modal.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "is_owner": True,
+            "auditors": auditors,
+        },
+        headers=htmx_toast("Member removed"),
+    )
+
+
+@router.post("/{project_id}/transfer", response_class=HTMLResponse)
+async def transfer_project_ownership(
+    project_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Transfer project ownership to another user (admin only)."""
+    user = getattr(request.state, "user", None)
+    if not user or user.role != UserRole.ADMIN:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    from app.utils.access import can_access_project
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    form = await request.form()
+    new_owner_id_str = (form.get("new_owner_id") or "").strip()
+
+    if new_owner_id_str:
+        try:
+            project.owner_id = uuid.UUID(new_owner_id_str)
+            db.commit()
+            db.refresh(project)
+            transferred = True
+        except ValueError:
+            transferred = False
+    else:
+        transferred = False
+
+    # Re-render the modal with updated data
+    user_repo = UserRepository(db)
+    auditors = user_repo.get_auditors(user.tenant_id)
+
+    return templates.TemplateResponse(
+        "projects/_share_modal.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "is_owner": True,
+            "auditors": auditors,
+            "success": "Ownership transferred successfully." if transferred else None,
+        },
+        headers=htmx_toast("Ownership transferred") if transferred else None,
+    )

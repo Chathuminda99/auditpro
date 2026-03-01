@@ -3,10 +3,11 @@
 from typing import List
 from uuid import UUID
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_
-from app.models.project import Project, ProjectStatus
+from sqlalchemy import and_, or_
+from app.models.project import Project, ProjectStatus, ProjectMember
 from app.models.client import Client
 from app.models.framework import Framework
+from app.models.user import User, UserRole
 from app.repositories.base import BaseRepository
 
 
@@ -19,16 +20,27 @@ class ProjectRepository(BaseRepository[Project]):
         """Initialize project repository."""
         super().__init__(db)
 
-    def get_all_with_details(self, tenant_id: UUID) -> List[Project]:
-        """Get all top-level projects for a tenant with eager-loaded client and framework."""
-        return self.db.query(Project).filter(
+    def get_all_with_details(self, tenant_id: UUID, user: User | None = None) -> List[Project]:
+        """Get all top-level projects for a tenant with eager-loaded client and framework.
+
+        When user is an Auditor, only returns projects they own or are a member of.
+        """
+        query = self.db.query(Project).filter(
             and_(
                 Project.tenant_id == tenant_id,
                 Project.parent_project_id.is_(None),
             )
-        ).options(
+        )
+        if user and user.role == UserRole.AUDITOR:
+            member_subq = self.db.query(ProjectMember.project_id).filter(
+                ProjectMember.user_id == user.id
+            )
+            query = query.filter(
+                or_(Project.owner_id == user.id, Project.id.in_(member_subq))
+            )
+        return query.options(
             joinedload(Project.client),
-            joinedload(Project.framework)
+            joinedload(Project.framework),
         ).all()
 
     def get_by_id_with_details(
@@ -74,14 +86,26 @@ class ProjectRepository(BaseRepository[Project]):
         client_id: UUID | None = None,
         framework_id: UUID | None = None,
         search: str | None = None,
+        user: User | None = None,
     ) -> List[Project]:
-        """Filter top-level projects by optional criteria."""
+        """Filter top-level projects by optional criteria.
+
+        When user is an Auditor, only returns projects they own or are a member of.
+        """
         query = self.db.query(Project).filter(
             and_(
                 Project.tenant_id == tenant_id,
                 Project.parent_project_id.is_(None),
             )
         )
+
+        if user and user.role == UserRole.AUDITOR:
+            member_subq = self.db.query(ProjectMember.project_id).filter(
+                ProjectMember.user_id == user.id
+            )
+            query = query.filter(
+                or_(Project.owner_id == user.id, Project.id.in_(member_subq))
+            )
 
         if status:
             query = query.filter(Project.status == status)

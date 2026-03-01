@@ -9,9 +9,7 @@ class UserRole(str, Enum):
     """User role enumeration."""
 
     ADMIN = "admin"
-    ASSESSOR = "assessor"
-    CLIENT = "client"
-    VIEWER = "viewer"
+    AUDITOR = "auditor"
 
 
 class User(BaseModel, TimestampMixin):
@@ -26,6 +24,8 @@ class User(BaseModel, TimestampMixin):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     role: Mapped[UserRole] = mapped_column(
-        SQLEnum(UserRole), nullable=False, default=UserRole.VIEWER
+        SQLEnum(UserRole, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=UserRole.AUDITOR,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

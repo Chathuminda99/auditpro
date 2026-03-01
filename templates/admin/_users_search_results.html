@@ -1,0 +1,10 @@
+<!-- Auditor search results for share modal autocomplete -->
+{% for u in results %}
+<div class="px-3 py-2 hover:bg-primary/5 cursor-pointer text-sm text-slate-900 dark:text-white"
+  @click="document.querySelector('[name=user_id]').value = '{{ u.id }}'; $el.closest('.search-results').innerHTML = ''">
+  <span class="font-semibold">{{ u.full_name }}</span>
+  <span class="text-slate-500 dark:text-slate-400 ml-1">{{ u.email }}</span>
+</div>
+{% else %}
+<div class="px-3 py-2 text-sm text-slate-400 dark:text-slate-500">No auditors found</div>
+{% endfor %}
