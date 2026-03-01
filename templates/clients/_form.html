@@ -4,42 +4,42 @@
   <div class="space-y-6">
     <!-- Header -->
     <div>
-      <h2 class="text-xl font-semibold text-foreground">{% if client %}Update Client{% else %}New Client{% endif %}</h2>
-      <p class="text-sm text-muted-foreground mt-1">Fill in the details below to {% if client %}update the{% else %}create a{% endif %} client.</p>
+      <h2 class="text-xl font-semibold text-foreground">{% if client %}Update client information{% else %}Add new client{% endif %}</h2>
+      <p class="text-sm text-muted-foreground mt-1">{% if client %}Update the client's details and contact information.{% else %}Add a client organization that you audit.{% endif %}</p>
     </div>
 
     <!-- Client Name -->
     <div class="space-y-2">
-      <label for="name" class="text-sm font-medium text-foreground">Client Name <span class="text-destructive">*</span></label>
-      <input type="text" id="name" name="name" value="{{ client.name if client else '' }}" required placeholder="Enter client name"
+      <label for="name" class="text-sm font-medium text-foreground">Organization Name <span class="text-destructive">*</span></label>
+      <input type="text" id="name" name="name" value="{{ client.name if client else '' }}" required placeholder="e.g., Acme Corporation"
         class="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors" />
     </div>
 
     <!-- Industry -->
     <div class="space-y-2">
-      <label for="industry" class="text-sm font-medium text-foreground">Industry</label>
-      <input type="text" id="industry" name="industry" value="{{ client.industry if client else '' }}" placeholder="Enter industry (optional)"
+      <label for="industry" class="text-sm font-medium text-foreground">Industry Sector</label>
+      <input type="text" id="industry" name="industry" value="{{ client.industry if client else '' }}" placeholder="e.g., Technology, Healthcare, Finance"
         class="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors" />
     </div>
 
     <!-- Contact Name -->
     <div class="space-y-2">
-      <label for="contact_name" class="text-sm font-medium text-foreground">Contact Name</label>
-      <input type="text" id="contact_name" name="contact_name" value="{{ client.contact_name if client else '' }}" placeholder="Enter contact name (optional)"
+      <label for="contact_name" class="text-sm font-medium text-foreground">Primary Contact</label>
+      <input type="text" id="contact_name" name="contact_name" value="{{ client.contact_name if client else '' }}" placeholder="Contact person's name"
         class="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors" />
     </div>
 
     <!-- Contact Email -->
     <div class="space-y-2">
       <label for="contact_email" class="text-sm font-medium text-foreground">Contact Email</label>
-      <input type="email" id="contact_email" name="contact_email" value="{{ client.contact_email if client else '' }}" placeholder="Enter email (optional)"
+      <input type="email" id="contact_email" name="contact_email" value="{{ client.contact_email if client else '' }}" placeholder="contact@organization.com"
         class="w-full flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors" />
     </div>
 
     <!-- Notes -->
     <div class="space-y-2">
-      <label for="notes" class="text-sm font-medium text-foreground">Notes</label>
-      <textarea id="notes" name="notes" rows="4" placeholder="Enter notes (optional)"
+      <label for="notes" class="text-sm font-medium text-foreground">Additional Notes</label>
+      <textarea id="notes" name="notes" rows="4" placeholder="Add any relevant context or details about this organization"
         class="w-full flex rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 transition-colors resize-none">{{ client.notes if client else '' }}</textarea>
     </div>
 
@@ -47,12 +47,12 @@
     <div class="flex gap-3 justify-end pt-4 border-t border-border">
       <button type="button" @click="$store.modal.hide()"
         class="inline-flex items-center justify-center gap-2 font-medium rounded-md px-4 py-2 text-sm transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none border border-input bg-background text-foreground hover:bg-muted">
-        Cancel
+        Discard
       </button>
       <button type="submit"
         class="inline-flex items-center justify-center gap-2 font-medium rounded-md px-4 py-2 text-sm transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-primary text-primary-foreground hover:opacity-90">
         <span class="material-symbols-outlined text-[18px]">{% if client %}edit{% else %}add_circle{% endif %}</span>
-        {% if client %}Update{% else %}Create{% endif %} Client
+        {% if client %}Update client{% else %}Add client{% endif %}
       </button>
     </div>
   </div>
