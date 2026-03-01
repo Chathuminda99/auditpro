@@ -34,8 +34,13 @@
 
 - [x] Evidence panel per observation — add text notes and upload images/files
 - [x] Audit timer in project controls sidebar — start, pause, stop with localStorage persistence
-- [ ] Access Controls
-  - [ ] Add Role based access controls to the application [Roles - Admins and Auditors](Admin can see all the projects, add clients, edit framework controls, add/approve/manage users | Auditors can't see the other users projects. If an audtor share his project with an antoehr auditor he can see that project. Admins can assign the autority of a project to an another auditor.)
+- [x] Access Controls (RBAC)
+  - [x] Role-based access control: Admin (all projects, clients, controls, users) + Auditor (own/shared projects only)
+  - [x] Project ownership tracking and transfer
+  - [x] Project sharing with auditors
+  - [x] User management interface (/admin/users)
+  - [x] Route-level and repository-level access guards
+  - [x] Control detail metadata shows project owner
 
 ## Antigravity UX/UI suggestions
 
@@ -63,5 +68,3 @@
 - [ ] Improve **keyboard and accessibility support**: visible focus states everywhere, ARIA labels for icon-only controls, logical tab order, and color-contrast audit.
 - [ ] Refine **microcopy and labeling** (buttons, statuses, helper text) to use user outcomes instead of internal/system wording.
 - [ ] Add **contextual onboarding hints** for first-time users (progressive tooltips/checklist) that can be dismissed and later reopened from Help.
-
-claude --resume ac216bad-f5e4-456d-b573-5d848fe7dec0
