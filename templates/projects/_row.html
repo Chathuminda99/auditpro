@@ -1,11 +1,19 @@
 <tr id="project-row-{{ project.id }}" class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
   <!-- Project Name -->
   <td class="px-6 py-4">
-    <a href="/projects/{{ project.id }}"
-      class="inline-flex items-center gap-2 font-semibold text-slate-900 dark:text-white hover:text-primary transition-colors">
-      <span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-colors opacity-60 group-hover:opacity-100">assignment</span>
-      <span class="truncate">{{ project.name }}</span>
-    </a>
+    <div class="flex items-center gap-2">
+      <a href="/projects/{{ project.id }}"
+        class="inline-flex items-center gap-2 font-semibold text-slate-900 dark:text-white hover:text-primary transition-colors">
+        <span class="material-symbols-outlined text-[18px] text-slate-400 group-hover:text-primary transition-colors opacity-60 group-hover:opacity-100">assignment</span>
+        <span class="truncate">{{ project.name }}</span>
+      </a>
+      {% if project.project_type and project.project_type.value == 'pci_dss_health_check' %}
+      <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold whitespace-nowrap bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+        <span class="material-symbols-outlined text-[12px]">payments</span>
+        Health Check
+      </span>
+      {% endif %}
+    </div>
   </td>
 
   <!-- Client -->

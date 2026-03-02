@@ -106,7 +106,10 @@
                         if (body) body.innerHTML = '';
                     }, 250);
                 }
-            })
+            });
+            Alpine.store('projectForm', {
+                type: 'standard_audit'
+            });
         })
 
         // Toast notification system

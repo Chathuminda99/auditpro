@@ -1,0 +1,104 @@
+<!-- Control Header -->
+<div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
+  <span class="inline-block font-mono text-xs bg-primary/10 text-primary dark:bg-primary/20 px-2 py-1 rounded mb-2">
+    {{ instance.control_id_snapshot }}
+  </span>
+  <h2 class="text-xl font-semibold text-slate-900 dark:text-white mt-2">{{ instance.control_title_snapshot }}</h2>
+  {% if instance.control_description_snapshot %}
+  <p class="text-slate-600 dark:text-slate-400 text-sm mt-2">{{ instance.control_description_snapshot }}</p>
+  {% endif %}
+</div>
+
+<!-- Assessment Form -->
+<form hx-post="/projects/{{ project.id }}/domains/{{ session.audit_domain.id }}/sessions/{{ session.id }}/controls/{{ instance.id }}"
+      hx-target="#control-panel" hx-swap="innerHTML"
+      x-data="{ status: '{{ instance.status.value }}' }"
+      class="space-y-4 mb-8">
+
+  <!-- Status Dropdown -->
+  <div>
+    <label for="status" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+      Assessment Status
+    </label>
+    <select id="status" name="status" x-model="status"
+      class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary">
+      <option value="not_started">Not Started</option>
+      <option value="in_progress">In Progress</option>
+      <option value="pass">Pass</option>
+      <option value="fail">Fail</option>
+      <option value="na">Not Applicable</option>
+    </select>
+  </div>
+
+  <!-- Status Badge Preview -->
+  <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-800">
+    <div class="text-xs text-slate-600 dark:text-slate-400 mb-1">Status Preview</div>
+    <div class="flex items-center gap-2">
+      <!-- Pass -->
+      <span x-show="status === 'pass'" class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+        <span class="material-symbols-outlined text-[12px]">check_circle</span>
+        Pass
+      </span>
+      <!-- Fail -->
+      <span x-show="status === 'fail'" class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+        <span class="material-symbols-outlined text-[12px]">close_circle</span>
+        Fail
+      </span>
+      <!-- In Progress -->
+      <span x-show="status === 'in_progress'" class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+        <span class="material-symbols-outlined text-[12px]">hourglass_top</span>
+        In Progress
+      </span>
+      <!-- Not Applicable -->
+      <span x-show="status === 'na'" class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+        <span class="material-symbols-outlined text-[12px]">visibility_off</span>
+        Not Applicable
+      </span>
+      <!-- Not Started -->
+      <span x-show="status === 'not_started'" class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+        <span class="material-symbols-outlined text-[12px]">schedule</span>
+        Not Started
+      </span>
+    </div>
+  </div>
+
+  <!-- Notes Textarea -->
+  <div>
+    <label for="notes" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+      Assessment Notes
+    </label>
+    <textarea id="notes" name="notes" rows="4"
+      placeholder="Document your findings, test results, or compliance notes..."
+      class="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary resize-none">{{ instance.notes or '' }}</textarea>
+  </div>
+
+  <!-- Save Button -->
+  <button type="submit"
+    class="w-full px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:opacity-90 transition-opacity">
+    Save Assessment
+  </button>
+</form>
+
+<!-- Evidence Section -->
+<div class="border-t border-slate-200 dark:border-slate-700 pt-6">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="font-semibold text-slate-900 dark:text-white">Evidence</h3>
+    <div class="flex items-center gap-2">
+      <button hx-get="/projects/{{ project.id }}/domains/{{ session.audit_domain.id }}/sessions/{{ session.id }}/evidence/new?instance_id={{ instance.id }}&type=text_note"
+        hx-target="#modal-body" @click="$store.modal.show()"
+        class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-primary hover:bg-primary/10 transition-colors">
+        <span class="material-symbols-outlined text-[14px]">note_add</span>
+        Add Note
+      </button>
+      <button hx-get="/projects/{{ project.id }}/domains/{{ session.audit_domain.id }}/sessions/{{ session.id }}/evidence/new?instance_id={{ instance.id }}&type=file"
+        hx-target="#modal-body" @click="$store.modal.show()"
+        class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-primary hover:bg-primary/10 transition-colors">
+        <span class="material-symbols-outlined text-[14px]">upload_file</span>
+        Upload File
+      </button>
+    </div>
+  </div>
+  <div id="evidence-list-{{ instance.id }}">
+    {% include "projects/health_check/_evidence_list.html" with context %}
+  </div>
+</div>

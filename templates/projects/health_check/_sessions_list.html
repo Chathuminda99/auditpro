@@ -1,0 +1,96 @@
+{% if domain.sessions %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for session in domain.sessions %}
+  {% set stats = session_stats.get(session.id|string, {}) %}
+  <div class="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 hover:shadow-md transition-shadow">
+    <!-- Session Name and Asset Identifier -->
+    <div class="flex items-start justify-between gap-3 mb-3">
+      <div class="flex-1 min-w-0">
+        <h3 class="font-semibold text-slate-900 dark:text-white truncate">{{ session.name }}</h3>
+        {% if session.asset_identifier %}
+        <p class="text-xs bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 px-2 py-1 rounded w-fit mt-1">
+          {{ session.asset_identifier }}
+        </p>
+        {% endif %}
+      </div>
+      {% if user.role.value == 'admin' or user.id == project.owner_id %}
+      <button hx-delete="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}"
+        hx-confirm="Delete this session? All assessments will be removed."
+        hx-target="#sessions-list" hx-swap="innerHTML"
+        class="p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex-shrink-0"
+        title="Delete Session">
+        <span class="material-symbols-outlined text-[18px]">delete</span>
+      </button>
+      {% endif %}
+    </div>
+
+    <!-- Description -->
+    {% if session.description %}
+    <p class="text-sm text-slate-600 dark:text-slate-400 line-clamp-2 mb-3">{{ session.description }}</p>
+    {% endif %}
+
+    <!-- Progress Bar -->
+    {% set total = session.control_instances|length %}
+    {% set assessed = 0 %}
+    {% for inst in session.control_instances %}
+      {% if inst.status.value != 'not_started' %}
+        {% set assessed = assessed + 1 %}
+      {% endif %}
+    {% endfor %}
+    <div class="mb-3">
+      <div class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-1">
+        <span>Progress</span>
+        <span>{{ assessed }} / {{ total }}</span>
+      </div>
+      <div class="w-full bg-slate-200 dark:bg-slate-600 rounded-full h-1.5">
+        {% if total > 0 %}
+        <div class="bg-primary h-1.5 rounded-full transition-all" style="width: {{ (assessed / total * 100)|round(0)|int }}%"></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Status Pills -->
+    <div class="flex items-center gap-2 flex-wrap mb-4">
+      <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+        <span class="material-symbols-outlined text-[12px]">check_circle</span>
+        {{ stats.get('pass', 0) }} Pass
+      </span>
+      <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+        <span class="material-symbols-outlined text-[12px]">close_circle</span>
+        {{ stats.get('fail', 0) }} Fail
+      </span>
+      <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+        <span class="material-symbols-outlined text-[12px]">schedule</span>
+        {{ stats.get('not_started', 0) }} Not Started
+      </span>
+      {% if stats.get('na', 0) > 0 %}
+      <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
+        <span class="material-symbols-outlined text-[12px]">visibility_off</span>
+        {{ stats.get('na', 0) }} NA
+      </span>
+      {% endif %}
+    </div>
+
+    <!-- View Session Link -->
+    <a href="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}"
+      class="inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80 transition-colors">
+      View Session
+      <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<!-- Empty State -->
+<div class="py-12 px-6 text-center border-2 border-dashed border-slate-200 dark:border-slate-600 rounded-lg">
+  <span class="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mx-auto block mb-3">session</span>
+  <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">No sessions yet</h3>
+  <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Create your first asset session to start assessing controls.</p>
+  <button hx-get="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/new" hx-target="#modal-body"
+    @click="$store.modal.show()"
+    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:opacity-90 transition-opacity">
+    <span class="material-symbols-outlined text-[16px]">add</span>
+    Add Session
+  </button>
+</div>
+{% endif %}

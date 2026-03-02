@@ -8,6 +8,38 @@
       <p class="text-sm text-muted-foreground mt-1">{% if project %}Update the audit information below.{% else %}Provide basic information to begin your audit.{% endif %}</p>
     </div>
 
+    <!-- Project Type Toggle (creation only) -->
+    {% if not project %}
+    <div x-data='$store.projectForm' class="space-y-3">
+      <label class="text-sm font-medium text-foreground">Audit Type <span class="text-destructive">*</span></label>
+      <div class="grid grid-cols-2 gap-3">
+        <!-- Standard Audit Card -->
+        <button type="button"
+          @click="$store.projectForm.type = 'standard_audit'"
+          :class="$store.projectForm.type === 'standard_audit' ? 'ring-2 ring-primary border-primary' : 'border-border hover:border-primary/50'"
+          class="relative flex flex-col items-center gap-3 p-4 rounded-lg border-2 transition-all">
+          <span class="material-symbols-outlined text-2xl" :class="$store.projectForm.type === 'standard_audit' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'">description</span>
+          <div class="text-center">
+            <div class="font-semibold text-sm text-foreground">Standard Audit</div>
+            <div class="text-xs text-muted-foreground mt-1">Framework-based<br/>control assessment</div>
+          </div>
+        </button>
+        <!-- PCI DSS Health Check Card -->
+        <button type="button"
+          @click="$store.projectForm.type = 'pci_dss_health_check'"
+          :class="$store.projectForm.type === 'pci_dss_health_check' ? 'ring-2 ring-primary border-primary' : 'border-border hover:border-primary/50'"
+          class="relative flex flex-col items-center gap-3 p-4 rounded-lg border-2 transition-all">
+          <span class="material-symbols-outlined text-2xl" :class="$store.projectForm.type === 'pci_dss_health_check' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'">payments</span>
+          <div class="text-center">
+            <div class="font-semibold text-sm text-foreground">PCI DSS Health Check</div>
+            <div class="text-xs text-muted-foreground mt-1">Per-asset domain<br/>assessment</div>
+          </div>
+        </button>
+      </div>
+      <input type="hidden" name="project_type" :value="$store.projectForm.type" />
+    </div>
+    {% endif %}
+
     <!-- Project Name -->
     <div class="space-y-2">
       <label for="name" class="text-sm font-medium text-foreground">Audit Name <span class="text-destructive">*</span></label>
@@ -68,7 +100,7 @@
             ] %}
             {% for framework in frameworks %}
             {% set color = colors[loop.index0 % colors|length] %}
-            <li>
+            <li x-show="$store.projectForm.type !== 'pci_dss_health_check' || ({% if 'PCI DSS' in framework.name %}true{% else %}false{% endif %})">
               <button type="button" @click='value = "{{ framework.id }}"; open = false'
                 :class='value === "{{ framework.id }}" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
                 class="dropdown-item">

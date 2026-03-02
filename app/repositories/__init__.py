@@ -7,6 +7,7 @@ from app.repositories.project import ProjectRepository
 from app.repositories.response import ProjectResponseRepository
 from app.repositories.workflow import WorkflowExecutionRepository
 from app.repositories.user import UserRepository
+from app.repositories.health_check import HealthCheckRepository
 
 __all__ = [
     "BaseRepository",
@@ -16,4 +17,5 @@ __all__ = [
     "ProjectResponseRepository",
     "WorkflowExecutionRepository",
     "UserRepository",
+    "HealthCheckRepository",
 ]

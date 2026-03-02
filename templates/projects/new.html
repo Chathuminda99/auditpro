@@ -32,7 +32,30 @@
         </div>
     </div>
 
-    <form method="POST" action="/projects" class="flex flex-col gap-8">
+    <form method="POST" action="/projects" x-data="$store.projectForm" class="flex flex-col gap-8">
+        <!-- Project Type Selection -->
+        <div class="grid grid-cols-2 gap-4 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <label class="relative flex flex-col items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all"
+            :class="type === 'standard_audit' ? 'ring-2 ring-primary border-primary' : 'border-slate-200 dark:border-slate-800 hover:border-primary/50'"
+            @click="type = 'standard_audit'">
+            <span class="material-symbols-outlined text-3xl" :class="type === 'standard_audit' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'">description</span>
+            <div class="text-center">
+              <div class="font-semibold text-sm text-slate-900 dark:text-slate-100">Standard Audit</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Framework-based<br/>control assessment</div>
+            </div>
+          </label>
+          <label class="relative flex flex-col items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all"
+            :class="type === 'pci_dss_health_check' ? 'ring-2 ring-primary border-primary' : 'border-slate-200 dark:border-slate-800 hover:border-primary/50'"
+            @click="type = 'pci_dss_health_check'">
+            <span class="material-symbols-outlined text-3xl" :class="type === 'pci_dss_health_check' ? 'text-primary' : 'text-slate-400 dark:text-slate-500'">payments</span>
+            <div class="text-center">
+              <div class="font-semibold text-sm text-slate-900 dark:text-slate-100">PCI DSS Health Check</div>
+              <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Per-asset domain<br/>assessment</div>
+            </div>
+          </label>
+        </div>
+        <input type="hidden" name="project_type" :value="type" />
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- Left Column: Basics -->
             <div class="flex flex-col gap-6">
@@ -123,6 +146,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     {% for framework in frameworks %}
                     <div onclick="selectFramework('{{ framework.id }}', this)"
+                        x-show="$store.projectForm.type === 'standard_audit' || ({% if 'PCI DSS' in framework.name %}true{% else %}false{% endif %})"
                         class="framework-card cursor-pointer group flex flex-col p-5 border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-xl transition-all hover:shadow-md">
                         <div class="flex justify-between items-start mb-4">
                             {% set icon_map = {

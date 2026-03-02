@@ -1,14 +1,18 @@
 """Project management routes."""
 
 import uuid
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+import os
+import shutil
+from pathlib import Path
+from fastapi import APIRouter, Request, Depends, UploadFile, File
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Project, ProjectStatus
-from app.models.project import ResponseStatus
+from app.models.project import ResponseStatus, ProjectType
+from app.models.health_check import ControlInstanceStatus
 from app.models.workflow import WorkflowExecutionStatus
 from app.repositories import (
     ProjectRepository,
@@ -17,6 +21,7 @@ from app.repositories import (
     ProjectResponseRepository,
     WorkflowExecutionRepository,
     UserRepository,
+    HealthCheckRepository,
 )
 from app.models.project import ProjectMember
 from app.models.user import UserRole
@@ -25,6 +30,28 @@ from app.services import workflow_engine
 router = APIRouter(prefix="/projects", tags=["projects"])
 from app.templates import templates
 from app.utils.htmx import htmx_toast
+
+
+def compute_domain_rollup(stats: dict) -> str:
+    """Derive a single PASS/FAIL/IN_PROGRESS/NOT_STARTED verdict from aggregated stats.
+
+    Rules (in priority order):
+    - "fail"        — if any control instance is FAIL
+    - "pass"        — if nothing is not_started or in_progress (all resolved: pass+na)
+    - "in_progress" — if some are pass/in_progress but not all resolved
+    - "not_started" — if no sessions exist or everything is not_started
+    """
+    if stats.get("fail", 0) > 0:
+        return "fail"
+    total = sum(stats.values())
+    if total == 0:
+        return "not_started"
+    unresolved = stats.get("not_started", 0) + stats.get("in_progress", 0)
+    if unresolved == 0:
+        return "pass"
+    if stats.get("pass", 0) > 0 or stats.get("in_progress", 0) > 0:
+        return "in_progress"
+    return "not_started"
 
 
 @router.get("", response_class=HTMLResponse)
@@ -151,6 +178,13 @@ async def create_project(request: Request, db: Session = Depends(get_db)):
     except ValueError:
         status = ProjectStatus.DRAFT
 
+    # Parse project type
+    project_type_value = form_data.get("project_type", "standard_audit")
+    try:
+        project_type = ProjectType(project_type_value)
+    except ValueError:
+        project_type = ProjectType.STANDARD_AUDIT
+
     repo = ProjectRepository(db)
     project = repo.create(
         tenant_id=user.tenant_id,
@@ -160,15 +194,23 @@ async def create_project(request: Request, db: Session = Depends(get_db)):
         description=form_data.get("description", ""),
         status=status,
         owner_id=user.id,
+        project_type=project_type,
     )
 
     # Refresh to get related objects
     db.refresh(project, ["client", "framework"])
 
-    # Redirect isn't natively caught by HTMX headers, so we set a cookie or 
+    # Auto-add domains for PCI DSS Health Check projects
+    if project_type == ProjectType.PCI_DSS_HEALTH_CHECK:
+        hc_repo = HealthCheckRepository(db)
+        domain_types = hc_repo.get_domain_types_for_framework(project.framework_id)
+        for i, domain_type in enumerate(domain_types):
+            hc_repo.add_domain_to_project(project.id, domain_type.id, sort_order=i)
+
+    # Redirect isn't natively caught by HTMX headers, so we set a cookie or
     # use hx-redirect instead, but since we're using RedirectResponse it will be a 200 via HTMX's transparent redirect.
     return RedirectResponse(
-        url=f"/projects/{project.id}", 
+        url=f"/projects/{project.id}",
         status_code=303,
         headers=htmx_toast("Project created successfully")
     )
@@ -357,6 +399,685 @@ async def delete_segment(
     if success:
         return HTMLResponse("", headers=htmx_toast("Segment deleted successfully"))
     return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+
+@router.get("/{project_id}/domains/add", response_class=HTMLResponse)
+async def add_domain_modal(
+    project_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Get add domain modal content."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    unadded_domain_types = hc_repo.get_unadded_domain_types(project.id, project.framework_id)
+
+    return templates.TemplateResponse(
+        "projects/health_check/_add_domain_modal.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "unadded_domain_types": unadded_domain_types,
+        },
+    )
+
+
+@router.post("/{project_id}/domains", response_class=HTMLResponse)
+async def add_domain(
+    project_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Add a domain to a health check project."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    form_data = await request.form()
+    domain_type_id = (form_data.get("domain_type_id") or "").strip()
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    hc_repo.add_domain_to_project(project.id, domain_type_id)
+
+    # Re-render the domains grid
+    domains = hc_repo.get_domains_for_project(project.id)
+
+    # Compute domain stats
+    domain_stats = {}
+    for domain in domains:
+        stats = {s.value: 0 for s in ControlInstanceStatus}
+        for session in domain.sessions:
+            for inst in session.control_instances:
+                stats[inst.status.value] = stats.get(inst.status.value, 0) + 1
+        domain_stats[str(domain.id)] = stats
+
+    # Domain rollup
+    domain_rollup = {str(d.id): compute_domain_rollup(domain_stats[str(d.id)]) for d in domains}
+
+    return templates.TemplateResponse(
+        "projects/health_check/_domains_grid.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "domains": domains,
+            "domain_stats": domain_stats,
+            "domain_rollup": domain_rollup,
+        },
+        headers=htmx_toast("Domain added successfully")
+    )
+
+
+@router.delete("/{project_id}/domains/{domain_id}", response_class=HTMLResponse)
+async def remove_domain(
+    project_id: str, domain_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Remove a domain from a health check project."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    domain = hc_repo.get_domain_by_id(domain_id)
+
+    # Security check: verify the domain belongs to this project
+    if not domain or domain.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    hc_repo.remove_domain(domain_id)
+
+    # Re-render the domains grid
+    domains = hc_repo.get_domains_for_project(project.id)
+
+    # Compute domain stats
+    domain_stats = {}
+    for domain in domains:
+        stats = {s.value: 0 for s in ControlInstanceStatus}
+        for session in domain.sessions:
+            for inst in session.control_instances:
+                stats[inst.status.value] = stats.get(inst.status.value, 0) + 1
+        domain_stats[str(domain.id)] = stats
+
+    # Domain rollup
+    domain_rollup = {str(d.id): compute_domain_rollup(domain_stats[str(d.id)]) for d in domains}
+
+    return templates.TemplateResponse(
+        "projects/health_check/_domains_grid.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "domains": domains,
+            "domain_stats": domain_stats,
+            "domain_rollup": domain_rollup,
+        },
+        headers=htmx_toast("Domain removed successfully")
+    )
+
+
+# === Session Management ===
+
+
+@router.get("/{project_id}/download-evidence/{evidence_id}", response_class=FileResponse)
+async def download_evidence(
+    project_id: str, evidence_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Download an evidence file."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    evidence = hc_repo.get_evidence_by_id(evidence_id)
+
+    if not evidence or evidence.control_instance.audit_session.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    if evidence.evidence_type != "file" or not evidence.file_path:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    file_path = evidence.file_path.lstrip("/")
+    if not os.path.exists(file_path):
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    return FileResponse(
+        path=file_path,
+        filename=evidence.filename,
+        media_type="application/octet-stream",
+    )
+
+
+@router.get("/{project_id}/domains/{domain_id}", response_class=HTMLResponse)
+async def domain_detail(
+    project_id: str, domain_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Show domain detail page with sessions list."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    domain = hc_repo.get_domain_with_sessions(domain_id)
+
+    if not domain or domain.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    # Compute per-session stats
+    session_stats = {}
+    for session in domain.sessions:
+        session_stats[str(session.id)] = hc_repo.get_session_stats(session.id)
+
+    # Aggregate domain stats for rollup
+    aggregate_stats = {s.value: 0 for s in ControlInstanceStatus}
+    for sess_stats in session_stats.values():
+        for k, v in sess_stats.items():
+            aggregate_stats[k] = aggregate_stats.get(k, 0) + v
+    rollup_status = compute_domain_rollup(aggregate_stats)
+
+    breadcrumbs = [
+        {"label": "Projects", "url": "/projects"},
+        {"label": project.name, "url": f"/projects/{project.id}"},
+        {"label": domain.label or domain.audit_domain_type.name, "url": None},
+    ]
+
+    return templates.TemplateResponse(
+        "projects/health_check/domain_detail.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "domain": domain,
+            "session_stats": session_stats,
+            "rollup_status": rollup_status,
+            "breadcrumbs": breadcrumbs,
+        },
+    )
+
+
+@router.get("/{project_id}/domains/{domain_id}/sessions/new", response_class=HTMLResponse)
+async def add_session_modal(
+    project_id: str, domain_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Get add session modal content."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    domain = hc_repo.get_domain_by_id(domain_id)
+
+    if not domain or domain.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    return templates.TemplateResponse(
+        "projects/health_check/_add_session_modal.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "domain": domain,
+        },
+    )
+
+
+@router.post("/{project_id}/domains/{domain_id}/sessions", response_class=HTMLResponse)
+async def create_session(
+    project_id: str, domain_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Create a new session under a domain."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    domain = hc_repo.get_domain_by_id(domain_id)
+
+    if not domain or domain.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    form_data = await request.form()
+    name = (form_data.get("name") or "").strip()
+
+    if not name:
+        return RedirectResponse(url=f"/projects/{project_id}/domains/{domain_id}", status_code=302)
+
+    asset_identifier = form_data.get("asset_identifier", "").strip() or None
+    description = form_data.get("description", "").strip() or None
+
+    # Create session
+    session = hc_repo.create_session(
+        domain_id=domain_id,
+        project_id=project_id,
+        name=name,
+        asset_identifier=asset_identifier,
+        description=description,
+    )
+
+    # Seed control instances for this domain's type
+    control_count = hc_repo.seed_control_instances(session, domain.audit_domain_type_id)
+
+    return RedirectResponse(
+        url=f"/projects/{project_id}/domains/{domain_id}/sessions/{session.id}",
+        status_code=303,
+        headers=htmx_toast(f"Session created with {control_count} controls"),
+    )
+
+
+@router.delete("/{project_id}/domains/{domain_id}/sessions/{session_id}", response_class=HTMLResponse)
+async def delete_session(
+    project_id: str, domain_id: str, session_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Delete a session from a domain."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    domain = hc_repo.get_domain_by_id(domain_id)
+
+    if not domain or domain.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    # Verify session belongs to this domain
+    session = hc_repo.get_session_by_id(session_id)
+    if not session or session.audit_domain_id != domain.id:
+        return RedirectResponse(url=f"/projects/{project_id}/domains/{domain_id}", status_code=302)
+
+    hc_repo.delete_session(session_id)
+
+    # Reload domain and compute stats
+    domain = hc_repo.get_domain_with_sessions(domain_id)
+    session_stats = {}
+    for s in domain.sessions:
+        session_stats[str(s.id)] = hc_repo.get_session_stats(s.id)
+
+    return templates.TemplateResponse(
+        "projects/health_check/_sessions_list.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "domain": domain,
+            "session_stats": session_stats,
+        },
+        headers=htmx_toast("Session deleted"),
+    )
+
+
+@router.get("/{project_id}/domains/{domain_id}/sessions/{session_id}", response_class=HTMLResponse)
+async def session_detail(
+    project_id: str, domain_id: str, session_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Show session detail page with two-panel control assessment."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    session = hc_repo.get_session_by_id(session_id)
+
+    if not session or session.audit_domain.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    domain = session.audit_domain
+
+    # Verify domain belongs to this project
+    if domain.id != domain_id or domain.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    # Load control instances
+    control_instances = hc_repo.get_control_instances_for_session(session_id)
+
+    # Calculate stats
+    stats = hc_repo.get_session_stats(session_id)
+
+    breadcrumbs = [
+        {"label": "Projects", "url": "/projects"},
+        {"label": project.name, "url": f"/projects/{project.id}"},
+        {"label": domain.label or domain.audit_domain_type.name, "url": f"/projects/{project_id}/domains/{domain_id}"},
+        {"label": session.name, "url": None},
+    ]
+
+    return templates.TemplateResponse(
+        "projects/health_check/session_detail.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "domain": domain,
+            "session": session,
+            "control_instances": control_instances,
+            "stats": stats,
+            "breadcrumbs": breadcrumbs,
+        },
+    )
+
+
+@router.get("/{project_id}/domains/{domain_id}/sessions/{session_id}/controls/{instance_id}/panel", response_class=HTMLResponse)
+async def get_control_panel(
+    project_id: str, domain_id: str, session_id: str, instance_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Get control assessment panel for a specific control instance."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    instance = hc_repo.get_control_instance_by_id(instance_id)
+
+    if not instance or instance.audit_session.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    session = instance.audit_session
+
+    if session.id != session_id or session.audit_domain_id != domain_id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    return templates.TemplateResponse(
+        "projects/health_check/_control_panel.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "session": session,
+            "instance": instance,
+        },
+    )
+
+
+@router.post("/{project_id}/domains/{domain_id}/sessions/{session_id}/controls/{instance_id}", response_class=HTMLResponse)
+async def update_control(
+    project_id: str, domain_id: str, session_id: str, instance_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Update control instance status and notes."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    instance = hc_repo.get_control_instance_by_id(instance_id)
+
+    if not instance or instance.audit_session.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    session = instance.audit_session
+
+    if session.id != session_id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    form_data = await request.form()
+    status_value = form_data.get("status", ControlInstanceStatus.NOT_STARTED.value)
+    notes = form_data.get("notes", "").strip() or None
+
+    try:
+        status = ControlInstanceStatus(status_value)
+    except ValueError:
+        status = ControlInstanceStatus.NOT_STARTED
+
+    # Update the instance
+    hc_repo.update_control_instance(instance_id, status, notes, user.id)
+    instance = hc_repo.get_control_instance_by_id(instance_id)
+
+    return templates.TemplateResponse(
+        "projects/health_check/_control_panel.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "session": session,
+            "instance": instance,
+        },
+        headers=htmx_toast("Assessment saved"),
+    )
+
+
+@router.get("/{project_id}/domains/{domain_id}/sessions/{session_id}/evidence/new", response_class=HTMLResponse)
+async def add_evidence_modal(
+    project_id: str,
+    domain_id: str,
+    session_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    instance_id: str | None = None,
+    type: str | None = None,
+):
+    """Get add evidence modal content."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    session = hc_repo.get_session_by_id(session_id)
+
+    if not session or session.audit_domain.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    instance = None
+    if instance_id:
+        instance = hc_repo.get_control_instance_by_id(instance_id)
+        if not instance or instance.audit_session_id != session.id:
+            return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    initial_tab = type or "text_note"
+
+    return templates.TemplateResponse(
+        "projects/health_check/_add_evidence_modal.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "session": session,
+            "instance": instance,
+            "initial_tab": initial_tab,
+        },
+    )
+
+
+@router.post("/{project_id}/domains/{domain_id}/sessions/{session_id}/evidence", response_class=HTMLResponse)
+async def create_evidence(
+    project_id: str,
+    domain_id: str,
+    session_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    instance_id: str | None = None,
+):
+    """Create evidence (text note or file) for a control instance."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    session = hc_repo.get_session_by_id(session_id)
+
+    if not session or session.audit_domain.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    if not instance_id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    instance = hc_repo.get_control_instance_by_id(instance_id)
+    if not instance or instance.audit_session_id != session.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    form_data = await request.form()
+    evidence_type = (form_data.get("evidence_type") or "").strip()
+
+    if evidence_type == "text_note":
+        content = form_data.get("content", "").strip()
+        if not content:
+            return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+        hc_repo.add_text_evidence(instance.id, content)
+
+    elif evidence_type == "file":
+        file = form_data.get("file")
+        if not file or not isinstance(file, UploadFile):
+            return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+        # Validate file extension
+        allowed_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf"}
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in allowed_extensions:
+            return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+        # Create upload directory
+        upload_dir = Path(f"static/uploads/health_check/{session_id}")
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        # Save file
+        file_id = str(uuid.uuid4())
+        file_path = upload_dir / f"{file_id}{file_ext}"
+        file_contents = await file.read()
+        file_size = len(file_contents)
+
+        with open(file_path, "wb") as f:
+            f.write(file_contents)
+
+        # Store as relative path with leading /
+        relative_path = f"/{file_path}"
+        hc_repo.add_file_evidence(instance.id, file.filename, relative_path, file_size)
+
+    # Reload instance with updated evidence
+    instance = hc_repo.get_control_instance_by_id(instance.id)
+
+    return templates.TemplateResponse(
+        "projects/health_check/_evidence_list.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "instance": instance,
+        },
+        headers=htmx_toast("Evidence added"),
+    )
+
+
+@router.delete("/{project_id}/domains/{domain_id}/sessions/{session_id}/evidence/{evidence_id}", response_class=HTMLResponse)
+async def delete_evidence(
+    project_id: str, domain_id: str, session_id: str, evidence_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Delete an evidence item."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    evidence = hc_repo.get_evidence_by_id(evidence_id)
+
+    if not evidence or evidence.control_instance.audit_session_id != session_id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    instance = evidence.control_instance
+
+    # Delete file from disk if it's a file type
+    if evidence.evidence_type == "file" and evidence.file_path:
+        file_path = evidence.file_path.lstrip("/")
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
+
+    # Delete the evidence record
+    hc_repo.delete_evidence(evidence_id)
+
+    # Reload instance with updated evidence list
+    instance = hc_repo.get_control_instance_by_id(instance.id)
+
+    return templates.TemplateResponse(
+        "projects/health_check/_evidence_list.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "instance": instance,
+        },
+        headers=htmx_toast("Evidence removed"),
+    )
 
 
 @router.get("/{project_id}/controls/{control_id}/row", response_class=HTMLResponse)
@@ -926,6 +1647,53 @@ async def detail_project(
 
     if not can_access_project(user, project):
         return RedirectResponse(url="/projects", status_code=302)
+
+    # Fork: PCI DSS Health Check projects show the health check overview
+    if project.project_type == ProjectType.PCI_DSS_HEALTH_CHECK:
+        hc_repo = HealthCheckRepository(db)
+        domains = hc_repo.get_domains_for_project(project.id)
+        total_sessions = sum(len(d.sessions) for d in domains)
+
+        # Compute domain stats (pass/fail/not_started counts)
+        domain_stats = {}
+        for domain in domains:
+            stats = {s.value: 0 for s in ControlInstanceStatus}
+            for session in domain.sessions:
+                for inst in session.control_instances:
+                    stats[inst.status.value] = stats.get(inst.status.value, 0) + 1
+            domain_stats[str(domain.id)] = stats
+
+        # Domain rollup: single status per domain
+        domain_rollup = {str(d.id): compute_domain_rollup(domain_stats[str(d.id)]) for d in domains}
+
+        # Project-level assessed %
+        total_instances = sum(sum(stats.values()) for stats in domain_stats.values())
+        assessed_instances = sum(
+            stats.get("pass", 0) + stats.get("fail", 0) + stats.get("na", 0) + stats.get("in_progress", 0)
+            for stats in domain_stats.values()
+        )
+        assessed_pct = round(assessed_instances / total_instances * 100) if total_instances > 0 else 0
+        domains_pass = sum(1 for s in domain_rollup.values() if s == "pass")
+
+        breadcrumbs = [
+            {"label": "Projects", "url": "/projects"},
+            {"label": project.name, "url": None},
+        ]
+        return templates.TemplateResponse(
+            "projects/health_check/overview.html",
+            {
+                "request": request,
+                "user": user,
+                "project": project,
+                "domains": domains,
+                "domain_stats": domain_stats,
+                "domain_rollup": domain_rollup,
+                "assessed_pct": assessed_pct,
+                "domains_pass": domains_pass,
+                "total_sessions": total_sessions,
+                "breadcrumbs": breadcrumbs,
+            },
+        )
 
     # Check if this is a parent project with segments
     if project.segments:
