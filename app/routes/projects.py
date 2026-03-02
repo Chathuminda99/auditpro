@@ -899,7 +899,10 @@ async def update_control(
 
     # Update the instance
     hc_repo.update_control_instance(instance_id, status, notes, user.id)
-    instance = hc_repo.get_control_instance_by_id(instance_id)
+    instance = hc_repo.get_control_instance_with_observations(uuid.UUID(instance_id))
+
+    session = instance.audit_session
+    domain = session.audit_domain
 
     return templates.TemplateResponse(
         "projects/health_check/_control_panel.html",
@@ -907,8 +910,10 @@ async def update_control(
             "request": request,
             "user": user,
             "project": project,
+            "domain": domain,
             "session": session,
             "instance": instance,
+            "observations": instance.observations,
         },
         headers=htmx_toast("Assessment saved"),
     )

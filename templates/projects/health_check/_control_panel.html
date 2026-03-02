@@ -550,13 +550,36 @@
             class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50">
             Cancel
         </button>
-        <button type="submit" form="control-form"
+        <button id="hc-save-btn" type="submit" form="control-form"
             class="px-5 py-2 bg-primary text-white rounded-lg text-sm font-bold shadow-sm shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2">
-            <span class="material-symbols-outlined" style="font-size:18px">save</span>
-            Save &amp; Continue
+            <span id="hc-save-icon" class="material-symbols-outlined" style="font-size:18px">save</span>
+            <svg id="hc-save-spinner" class="animate-spin hidden" style="width:18px;height:18px" viewBox="0 0 24 24"
+                fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"></path>
+            </svg>
+            <span id="hc-save-label">Save &amp; Continue</span>
         </button>
     </div>
 </div>
+
+<script>
+    (function () {
+        const form = document.getElementById('control-form');
+        if (!form) return;
+
+        form.addEventListener('htmx:beforeRequest', function () {
+            const btn = document.getElementById('hc-save-btn');
+            const icon = document.getElementById('hc-save-icon');
+            const spinner = document.getElementById('hc-save-spinner');
+            const label = document.getElementById('hc-save-label');
+            if (btn) btn.disabled = true;
+            if (icon) icon.classList.add('hidden');
+            if (spinner) spinner.classList.remove('hidden');
+            if (label) label.textContent = 'Saving...';
+        });
+    })();
+</script>
 
 
 <script>
