@@ -29,6 +29,11 @@
 - [ ] When an user add same observation multiple times, give him/her a warning.
 - [x] Shrink the Control metadata and Audit trail section and give more room for observations table.
 - [ ] Add option to view commands/view path for some observations.
+- [ ] Improve the health check project
+  - [ ] add style to create asset session cancel button
+  - [ ] Make Check Points table sticky
+  - [ ] Make observation adding section sticky
+  - [ ] Add parent requirement in left control tree view.
 
 ## Features & Functionality
 
