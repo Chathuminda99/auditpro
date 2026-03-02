@@ -546,13 +546,13 @@ async def download_evidence(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    evidence = hc_repo.get_evidence_by_id(evidence_id)
+    evidence = hc_repo.get_evidence_by_id(uuid.UUID(evidence_id))
 
     if not evidence or evidence.control_instance.audit_session.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
@@ -581,13 +581,13 @@ async def domain_detail(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    domain = hc_repo.get_domain_with_sessions(domain_id)
+    domain = hc_repo.get_domain_with_sessions(uuid.UUID(domain_id))
 
     if not domain or domain.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
@@ -634,13 +634,13 @@ async def add_session_modal(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    domain = hc_repo.get_domain_by_id(domain_id)
+    domain = hc_repo.get_domain_by_id(uuid.UUID(domain_id))
 
     if not domain or domain.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
@@ -666,13 +666,13 @@ async def create_session(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    domain = hc_repo.get_domain_by_id(domain_id)
+    domain = hc_repo.get_domain_by_id(uuid.UUID(domain_id))
 
     if not domain or domain.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
@@ -688,8 +688,8 @@ async def create_session(
 
     # Create session
     session = hc_repo.create_session(
-        domain_id=domain_id,
-        project_id=project_id,
+        domain_id=uuid.UUID(domain_id),
+        project_id=uuid.UUID(project_id),
         name=name,
         asset_identifier=asset_identifier,
         description=description,
@@ -715,26 +715,26 @@ async def delete_session(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    domain = hc_repo.get_domain_by_id(domain_id)
+    domain = hc_repo.get_domain_by_id(uuid.UUID(domain_id))
 
     if not domain or domain.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     # Verify session belongs to this domain
-    session = hc_repo.get_session_by_id(session_id)
+    session = hc_repo.get_session_by_id(uuid.UUID(session_id))
     if not session or session.audit_domain_id != domain.id:
         return RedirectResponse(url=f"/projects/{project_id}/domains/{domain_id}", status_code=302)
 
-    hc_repo.delete_session(session_id)
+    hc_repo.delete_session(uuid.UUID(session_id))
 
     # Reload domain and compute stats
-    domain = hc_repo.get_domain_with_sessions(domain_id)
+    domain = hc_repo.get_domain_with_sessions(uuid.UUID(domain_id))
     session_stats = {}
     for s in domain.sessions:
         session_stats[str(s.id)] = hc_repo.get_session_stats(s.id)
@@ -762,13 +762,13 @@ async def session_detail(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    session = hc_repo.get_session_by_id(session_id)
+    session = hc_repo.get_session_by_id(uuid.UUID(session_id))
 
     if not session or session.audit_domain.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
@@ -776,7 +776,7 @@ async def session_detail(
     domain = session.audit_domain
 
     # Verify domain belongs to this project
-    if domain.id != domain_id or domain.project_id != project.id:
+    if str(domain.id) != domain_id or domain.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     # Load control instances
@@ -817,20 +817,20 @@ async def get_control_panel(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    instance = hc_repo.get_control_instance_by_id(instance_id)
+    instance = hc_repo.get_control_instance_by_id(uuid.UUID(instance_id))
 
     if not instance or instance.audit_session.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     session = instance.audit_session
 
-    if session.id != session_id or session.audit_domain_id != domain_id:
+    if str(session.id) != session_id or str(session.audit_domain_id) != domain_id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     return templates.TemplateResponse(
@@ -855,20 +855,20 @@ async def update_control(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/auth/login", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    instance = hc_repo.get_control_instance_by_id(instance_id)
+    instance = hc_repo.get_control_instance_by_id(uuid.UUID(instance_id))
 
     if not instance or instance.audit_session.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     session = instance.audit_session
 
-    if session.id != session_id:
+    if str(session.id) != session_id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     form_data = await request.form()
@@ -913,20 +913,20 @@ async def add_evidence_modal(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    session = hc_repo.get_session_by_id(session_id)
+    session = hc_repo.get_session_by_id(uuid.UUID(session_id))
 
     if not session or session.audit_domain.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     instance = None
     if instance_id:
-        instance = hc_repo.get_control_instance_by_id(instance_id)
+        instance = hc_repo.get_control_instance_by_id(uuid.UUID(instance_id))
         if not instance or instance.audit_session_id != session.id:
             return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
@@ -960,13 +960,13 @@ async def create_evidence(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    session = hc_repo.get_session_by_id(session_id)
+    session = hc_repo.get_session_by_id(uuid.UUID(session_id))
 
     if not session or session.audit_domain.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
@@ -974,7 +974,7 @@ async def create_evidence(
     if not instance_id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
-    instance = hc_repo.get_control_instance_by_id(instance_id)
+    instance = hc_repo.get_control_instance_by_id(uuid.UUID(instance_id))
     if not instance or instance.audit_session_id != session.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
@@ -1040,15 +1040,15 @@ async def delete_evidence(
         return RedirectResponse(url="/auth/login", status_code=302)
 
     repo = ProjectRepository(db)
-    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
 
     if not project:
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    evidence = hc_repo.get_evidence_by_id(evidence_id)
+    evidence = hc_repo.get_evidence_by_id(uuid.UUID(evidence_id))
 
-    if not evidence or evidence.control_instance.audit_session_id != session_id:
+    if not evidence or str(evidence.control_instance.audit_session_id) != session_id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     instance = evidence.control_instance
