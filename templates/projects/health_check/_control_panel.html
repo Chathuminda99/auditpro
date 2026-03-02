@@ -1,212 +1,604 @@
-<!-- Control Header & Status -->
-<div class="flex flex-col gap-4 pb-6 border-b border-slate-200 dark:border-slate-700 mb-6">
-  <div class="flex items-center gap-2 text-xs text-slate-500 font-medium">
-    <span class="text-primary whitespace-nowrap">{{ instance.control_id_snapshot }}</span>
-  </div>
-
-  <div class="flex flex-wrap items-start justify-between gap-4">
-    <div class="flex-1 min-w-0">
-      <h1 class="text-xl font-bold text-slate-900 dark:text-white tracking-tight leading-snug line-clamp-2">
-        {{ instance.control_id_snapshot }} {{ instance.control_title_snapshot }}
-      </h1>
-      {% if instance.control_description_snapshot %}
-      <p class="text-slate-600 dark:text-slate-400 text-xs mt-2 line-clamp-2">{{ instance.control_description_snapshot }}</p>
-      {% endif %}
+<!-- Workspace Header & Breadcrumbs -->
+<div class="flex flex-col gap-4 fade-in">
+    <div class="flex items-center gap-2 text-xs text-slate-500 font-medium overflow-x-auto pb-1">
+        <a href="/projects/{{ project.id }}" class="text-slate-600 dark:text-slate-300 hover:text-primary transition-colors whitespace-nowrap">
+            {{ project.name }}
+        </a>
+        <span class="material-symbols-outlined text-sm flex-shrink-0">chevron_right</span>
+        <span class="whitespace-nowrap">{{ domain.label or domain.audit_domain_type.name }}</span>
+        <span class="material-symbols-outlined text-sm flex-shrink-0">chevron_right</span>
+        <span class="whitespace-nowrap">{{ session.name }}</span>
+        <span class="material-symbols-outlined text-sm flex-shrink-0">chevron_right</span>
+        <span class="text-primary whitespace-nowrap">{{ instance.control_id_snapshot }} {{ instance.control_title_snapshot }}</span>
     </div>
 
-    <!-- Status Dropdown -->
-    <div x-data='{
-      open: false,
-      value: "{{ instance.status.value }}",
-      colors: {
-        "pass": "text-emerald-600 dark:text-emerald-500",
-        "fail": "text-rose-600 dark:text-rose-500",
-        "in_progress": "text-amber-600 dark:text-amber-500",
-        "na": "text-slate-500 dark:text-slate-400",
-        "not_started": "text-slate-500 dark:text-slate-400"
-      },
-      labels: {
-        "pass": "Pass",
-        "fail": "Fail",
-        "in_progress": "In Progress",
-        "na": "N/A",
-        "not_started": "N/S"
-      }
-    }' @click.outside="open = false" class="relative flex-shrink-0">
-      <input type="hidden" name="status" form="control-form" :value="value" />
-      <button type="button" @click="open = !open"
-        class="bg-white dark:bg-slate-900 px-2.5 py-1 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-1 transition-shadow hover:shadow-md text-xs font-bold cursor-pointer"
-        :class="colors[value]">
-        <span x-text="labels[value]" class="truncate"></span>
-        <svg class="w-3 h-3 transition-transform duration-150 flex-shrink-0" :class="open ? 'rotate-180' : ''"
-          xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="6 9 12 15 18 9"></polyline>
-        </svg>
-      </button>
-      <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-150"
-        x-transition:enter-start="transform opacity-0 scale-95 translate-y-[-10px]"
-        x-transition:enter-end="transform opacity-100 scale-100 translate-y-0"
-        x-transition:leave="transition ease-in duration-100"
-        x-transition:leave-start="transform opacity-100 scale-100 translate-y-0"
-        x-transition:leave-end="transform opacity-0 scale-95 translate-y-[-10px]"
-        class="absolute right-0 top-full z-50 mt-2 w-40 bg-white dark:bg-slate-900 rounded-[10px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-slate-800 p-1 overflow-hidden">
-        <ul class="flex flex-col gap-0.5">
-          <li>
-            <button type="button" @click='value = "in_progress"; open = false'
-              :class='value === "in_progress" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
-              class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                :class='value === "in_progress" ? "text-white" : "text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400"'>
-                <span class="material-symbols-outlined text-[12px]">pending</span>
-              </span>
-              <span class="truncate">In Progress</span>
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="max-w-2xl">
+            <h1 class="text-2xl font-bold text-slate-900 dark:text-white tracking-tight leading-snug">{{ instance.control_id_snapshot }} {{ instance.control_title_snapshot }}</h1>
+        </div>
+
+        <div x-data='{
+            open: false,
+            value: "{{ instance.status.value }}",
+            colors: {"pass": "text-emerald-600 dark:text-emerald-500", "fail": "text-red-600 dark:text-red-500", "in_progress": "text-amber-600 dark:text-amber-500", "na": "text-slate-500 dark:text-slate-400"},
+            labels: {"pass": "Pass", "fail": "Fail", "in_progress": "In Progress", "na": "N/A"}
+        }' @click.outside="open = false" class="relative">
+            <input type="hidden" name="status" form="control-form" :value="value" />
+            <button type="button" @click="open = !open"
+                class="bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 transition-shadow hover:shadow-md text-sm font-bold cursor-pointer"
+                :class="colors[value]">
+                <span x-text="labels[value]"></span>
+                <svg class="w-3.5 h-3.5 transition-transform duration-150" :class="open ? 'rotate-180' : ''"
+                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
             </button>
-          </li>
-          <li>
-            <button type="button" @click='value = "pass"; open = false'
-              :class='value === "pass" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
-              class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                :class='value === "pass" ? "text-white" : "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400"'>
-                <span class="material-symbols-outlined text-[12px]">check_circle</span>
-              </span>
-              <span class="truncate">Pass</span>
-            </button>
-          </li>
-          <li>
-            <button type="button" @click='value = "fail"; open = false'
-              :class='value === "fail" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
-              class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                :class='value === "fail" ? "text-white" : "text-rose-600 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-400"'>
-                <span class="material-symbols-outlined text-[12px]">cancel</span>
-              </span>
-              <span class="truncate">Fail</span>
-            </button>
-          </li>
-          <li>
-            <button type="button" @click='value = "na"; open = false'
-              :class='value === "na" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
-              class="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all">
-              <span class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
-                :class='value === "na" ? "text-white" : "text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400"'>
-                <span class="material-symbols-outlined text-[12px]">do_not_disturb</span>
-              </span>
-              <span class="truncate">Not Applicable</span>
-            </button>
-          </li>
-        </ul>
-      </div>
+            <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="transform opacity-0 scale-95 translate-y-[-10px]"
+                x-transition:enter-end="transform opacity-100 scale-100 translate-y-0"
+                x-transition:leave="transition ease-in duration-100"
+                x-transition:leave-start="transform opacity-100 scale-100 translate-y-0"
+                x-transition:leave-end="transform opacity-0 scale-95 translate-y-[-10px]"
+                class="absolute right-0 top-full z-50 mt-2 w-48 bg-white dark:bg-slate-900 rounded-[14px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-slate-800 p-2 overflow-hidden">
+                <ul class="flex flex-col gap-1 p-0.5">
+                    <li>
+                        <button type="button" @click='value = "in_progress"; open = false'
+                            :class='value === "in_progress" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
+                            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all">
+                            <span
+                                :class='value === "in_progress" ? "text-white" : "text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400"'
+                                class="flex items-center justify-center w-7 h-7 rounded-full transition-colors flex-shrink-0">
+                                <span class="material-symbols-outlined text-[16px]">pending</span>
+                            </span>
+                            <span>In Progress</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" @click='value = "pass"; open = false'
+                            :class='value === "pass" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
+                            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all">
+                            <span
+                                :class='value === "pass" ? "text-white" : "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400"'
+                                class="flex items-center justify-center w-7 h-7 rounded-full transition-colors flex-shrink-0">
+                                <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                            </span>
+                            <span>Pass</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" @click='value = "fail"; open = false'
+                            :class='value === "fail" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
+                            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all">
+                            <span
+                                :class='value === "fail" ? "text-white" : "text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400"'
+                                class="flex items-center justify-center w-7 h-7 rounded-full transition-colors flex-shrink-0">
+                                <span class="material-symbols-outlined text-[16px]">cancel</span>
+                            </span>
+                            <span>Fail</span>
+                        </button>
+                    </li>
+                    <li>
+                        <button type="button" @click='value = "na"; open = false'
+                            :class='value === "na" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
+                            class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all">
+                            <span
+                                :class='value === "na" ? "text-white" : "text-slate-500 bg-slate-100 dark:bg-slate-800 dark:text-slate-400"'
+                                class="flex items-center justify-center w-7 h-7 rounded-full transition-colors flex-shrink-0">
+                                <span class="material-symbols-outlined text-[16px]">do_not_disturb</span>
+                            </span>
+                            <span>N/A</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
-  </div>
+
+    <!-- Requirements and Testing Procedures Panels -->
+    <div class="grid grid-cols-1 gap-4 mt-6">
+        {% if instance.requirements_text_snapshot %}
+        <div x-data="{ open: true }"
+            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+            <button type="button" @click="open = !open"
+                class="w-full flex items-center justify-between px-5 py-2.5 text-left hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <div class="bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 p-1.5 rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined" style="font-size:16px">description</span>
+                    </div>
+                    Requirements
+                </h4>
+                <span class="text-slate-400 transition-transform duration-200 flex-shrink-0"
+                    :class="open ? '' : '-rotate-90'">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </span>
+            </button>
+            <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0" class="p-6 border-t border-slate-100 dark:border-slate-800">
+                <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap break-words">
+                    {{- instance.requirements_text_snapshot }}</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+            <div class="px-5 py-4">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <div class="bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 p-1.5 rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined" style="font-size:16px">description</span>
+                    </div>
+                    Requirements
+                </h4>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 italic">No requirements specified</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if instance.testing_procedures_text_snapshot %}
+        <div x-data="{ open: true }"
+            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+            <button type="button" @click="open = !open"
+                class="w-full flex items-center justify-between px-5 py-2.5 text-left hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <div class="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 p-1.5 rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined" style="font-size:16px">assignment_turned_in</span>
+                    </div>
+                    Testing Procedures
+                </h4>
+                <span class="text-slate-400 transition-transform duration-200 flex-shrink-0"
+                    :class="open ? '' : '-rotate-90'">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </span>
+            </button>
+            <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0" class="p-6 border-t border-slate-100 dark:border-slate-800">
+                <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap break-words">
+                    {{- instance.testing_procedures_text_snapshot }}</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+            <div class="px-5 py-4">
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <div class="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 p-1.5 rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined" style="font-size:16px">assignment_turned_in</span>
+                    </div>
+                    Testing Procedures
+                </h4>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-2 italic">No testing procedures specified</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
 </div>
 
-<!-- Form Content -->
-<form id="control-form" hx-post="/projects/{{ project.id }}/domains/{{ session.audit_domain.id }}/sessions/{{ session.id }}/controls/{{ instance.id }}"
-  hx-target="#control-panel" hx-swap="innerHTML" class="flex flex-col gap-6 pb-20">
+<form id="control-form" hx-post="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/controls/{{ instance.id }}"
+    hx-target="#control-panel" hx-swap="innerHTML" class="grid grid-cols-1 xl:grid-cols-4 gap-6 mt-6 fade-in"
+    @submit="prepareObservationsData()">
 
-  <!-- Assessment Notes -->
-  <div class="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden p-4">
-    <label for="notes" class="block text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider mb-2 flex items-center gap-2">
-      <span class="material-symbols-outlined text-sm text-blue-600">edit_note</span>
-      Notes
-    </label>
-    <textarea id="notes" name="notes" rows="4"
-      placeholder="Document findings..."
-      class="w-full px-2 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none">{{ instance.notes or '' }}</textarea>
-  </div>
+    <!-- Form Controls -->
+    <div class="xl:col-span-3 space-y-6">
 
-  <!-- Evidence Section -->
-  <div class="rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-    <div class="px-4 py-3 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-      <h3 class="font-semibold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-        <span class="material-symbols-outlined text-sm">attach_file</span>
-        Evidence
-      </h3>
-      <div class="flex items-center gap-1">
-        <button type="button" hx-get="/projects/{{ project.id }}/domains/{{ session.audit_domain.id }}/sessions/{{ session.id }}/evidence/new?instance_id={{ instance.id }}&type=text_note"
-          hx-target="#modal-body" @click="$store.modal.show()"
-          class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-primary hover:bg-primary/10 transition-colors">
-          <span class="material-symbols-outlined text-[12px]">note_add</span>
-          Note
-        </button>
-        <button type="button" hx-get="/projects/{{ project.id }}/domains/{{ session.audit_domain.id }}/sessions/{{ session.id }}/evidence/new?instance_id={{ instance.id }}&type=file"
-          hx-target="#modal-body" @click="$store.modal.show()"
-          class="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-primary hover:bg-primary/10 transition-colors">
-          <span class="material-symbols-outlined text-[12px]">upload_file</span>
-          File
-        </button>
-      </div>
-    </div>
-    <div id="evidence-list-{{ instance.id }}" class="p-4">
-      {% include "projects/health_check/_evidence_list.html" with context %}
-    </div>
-  </div>
+        <!-- Sticky area: Checkpoint + Observations toolbar freeze together while scrolling -->
+        <div class="sticky top-4 z-10 space-y-3">
 
-  <!-- Metadata Section -->
-  <div class="space-y-3">
-    <!-- Asset Info -->
-    <div class="bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm p-3">
-      <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Asset</h4>
-      <div class="space-y-1.5 text-xs">
-        <div>
-          <p class="text-slate-400 font-semibold">App</p>
-          <p class="text-slate-700 dark:text-slate-300 truncate">{{ session.name }}</p>
-        </div>
-        {% if session.asset_identifier %}
-        <div>
-          <p class="text-slate-400 font-semibold">IP/ID</p>
-          <p class="text-slate-700 dark:text-slate-300 font-mono text-xs truncate">{{ session.asset_identifier }}</p>
-        </div>
-        {% endif %}
-      </div>
-    </div>
+            {% if instance.assessment_checklist_snapshot and instance.assessment_checklist_snapshot.check_points_text %}
+            <div x-data="{ open: false }"
+                class="rounded-xl border border-purple-200 dark:border-purple-800/60 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-lg shadow-purple-100/60 dark:shadow-purple-900/20 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                <button type="button" @click="open = !open"
+                    class="w-full flex items-center justify-between px-5 py-5 text-left hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-colors">
+                    <h4 class="text-xs font-bold text-slate-900 dark:text-slate-50 uppercase tracking-wider flex items-center gap-2">
+                        <div class="bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 p-1.5 rounded-lg flex items-center justify-center">
+                            <span class="material-symbols-outlined" style="font-size:16px">checklist</span>
+                        </div>
+                        Check Points
+                        <span class="text-[10px] font-bold bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded-full normal-case tracking-normal">Pinned</span>
+                    </h4>
+                    <span class="text-slate-500 dark:text-slate-300 transition-transform duration-200 flex-shrink-0"
+                        :class="open ? '' : '-rotate-90'">
+                        <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </span>
+                </button>
+                <div x-show="open" x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100"
+                    x-transition:leave-end="opacity-0"
+                    class="border-t border-purple-100 dark:border-purple-900/40 px-8 py-6 max-h-52 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-300 dark:scrollbar-thumb-purple-700">
+                    <div class="space-y-1">
+                        {% set lines = instance.assessment_checklist_snapshot.check_points_text.strip().split('\n') if instance.assessment_checklist_snapshot.check_points_text else [] %}
+                        {% for line in lines %}
+                        {% if line.strip() %}
+                        {% set indent_level = (line | length) - (line | trim | length) %}
+                        {% set indent_spaces = indent_level // 2 %}
+                        {% set clean_text = line.strip() | replace('• ', '') | replace('- ', '') | replace('* ', '') | replace('– ', '') | replace('◦ ', '') %}
+                        {% if indent_spaces == 0 %}
+                        <div class="flex gap-2 items-start">
+                            {% elif indent_spaces == 1 %}
+                            <div class="flex gap-2 items-start pl-4">
+                                {% elif indent_spaces == 2 %}
+                                <div class="flex gap-2 items-start pl-8">
+                                    {% else %}
+                                    <div class="flex gap-2 items-start pl-12">
+                                        {% endif %}
+                                        <div class="flex-shrink-0 mt-1">
+                                            {% if indent_spaces == 0 %}
+                                            <div class="w-2 h-2 rounded-full bg-purple-500"></div>
+                                            {% elif indent_spaces == 1 %}
+                                            <div class="w-1.5 h-1.5 rounded-full bg-purple-400"></div>
+                                            {% else %}
+                                            <div class="w-1 h-1 rounded-full bg-purple-300"></div>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-sm text-slate-800 dark:text-slate-100 leading-relaxed flex-1">{{ clean_text }}</p>
+                                    </div>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="rounded-xl border border-purple-200 dark:border-purple-800/60 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-lg shadow-purple-100/60 dark:shadow-purple-900/20 relative overflow-hidden p-4">
+                            <p class="text-sm text-slate-500 dark:text-slate-400 italic">No check points specified</p>
+                        </div>
+                        {% endif %}
 
-    <!-- Control Info -->
-    <div class="bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm p-3">
-      <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Control</h4>
-      <div class="space-y-1.5 text-xs">
-        <div>
-          <p class="text-slate-400 font-semibold">Domain</p>
-          <p class="text-slate-700 dark:text-slate-300 truncate">{{ session.audit_domain.label or session.audit_domain.audit_domain_type.name }}</p>
-        </div>
-        <div>
-          <p class="text-slate-400 font-semibold">ID</p>
-          <p class="text-slate-700 dark:text-slate-300 font-mono">{{ instance.control_id_snapshot }}</p>
-        </div>
-      </div>
-    </div>
+                        <!-- Observations toolbar (sticky) -->
+                        <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden mt-3">
+                            <div class="px-6 py-4 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-primary">assignment_turned_in</span>
+                                    <h3 class="font-bold text-slate-900 dark:text-white">Observations</h3>
+                                </div>
+                                <button type="button"
+                                    class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 flex items-center gap-2"
+                                    onclick="document.getElementById('observation-dropdown-{{ instance.id }}').classList.toggle('hidden')">
+                                    <span class="material-symbols-outlined text-[14px]">add</span>
+                                    Add Observation
+                                </button>
+                            </div>
 
-    <!-- Audit Trail -->
-    <div class="bg-white dark:bg-slate-900 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm p-3">
-      <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Audit</h4>
-      <div class="text-xs space-y-1">
-        {% if instance.assessed_by %}
-        <div>
-          <p class="text-slate-400 font-semibold">Assessed By</p>
-          <p class="text-slate-700 dark:text-slate-300 truncate">{{ instance.assessed_by.full_name }}</p>
-        </div>
-        {% endif %}
-        <div>
-          <p class="text-slate-400 font-semibold">Created</p>
-          <p class="text-slate-700 dark:text-slate-300">{{ instance.created_at.strftime('%b %d, %Y') }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
+                            <!-- Dropdown to select predefined observations -->
+                            <div id="observation-dropdown-{{ instance.id }}"
+                                class="hidden border-t border-slate-100 dark:border-slate-800 p-6 bg-slate-50 dark:bg-slate-800/50">
+                                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
+                                    Select Observation
+                                </label>
+                                {% set obs_list = [] %}
+                                {% if instance.assessment_checklist_snapshot and instance.assessment_checklist_snapshot.observations %}
+                                {% for obs in instance.assessment_checklist_snapshot.observations %}
+                                {% set _ = obs_list.append({"id": obs.id|string, "label": obs.label, "recommendation": obs.recommendation or ""}) %}
+                                {% endfor %}
+                                {% endif %}
+                                <div x-data='{
+                        open: false,
+                        value: "",
+                        obsData: {{ obs_list | tojson | safe }},
+                        ddStyle: {},
+                        toggleDropdown() {
+                            if (this.open) { this.open = false; return; }
+                            const rect = this.$refs.trigger.getBoundingClientRect();
+                            this.ddStyle = { position: "fixed", top: (rect.bottom + 6) + "px", left: rect.left + "px", width: rect.width + "px", zIndex: 9999 };
+                            this.open = true;
+                            const container = document.getElementById("control-panel");
+                            if (container) {
+                                container.addEventListener("scroll", () => { this.open = false; }, { once: true });
+                            }
+                        }
+                    }' @click.away="open = false" @scroll.window="open = false" class="relative">
+                                    <button type="button" x-ref="trigger" @click="toggleDropdown()"
+                                        class="w-full flex items-center justify-between h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30">
+                                        <span
+                                            x-text="value ? (obsData.find(o => o.id === value)?.label || '').substring(0, 60) : '-- Choose an observation --'"
+                                            :class="value ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'"
+                                            class="truncate text-left flex-1"></span>
+                                        <span
+                                            class="pointer-events-none text-slate-400 ml-2 transition-transform duration-200"
+                                            :class="open ? 'rotate-180' : ''">
+                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="6 9 12 15 18 9"></polyline>
+                                            </svg>
+                                        </span>
+                                    </button>
+                                    <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-150"
+                                        x-transition:enter-start="transform opacity-0 scale-95 translate-y-[-10px]"
+                                        x-transition:enter-end="transform opacity-100 scale-100 translate-y-0"
+                                        x-transition:leave="transition ease-in duration-100"
+                                        x-transition:leave-start="transform opacity-100 scale-100 translate-y-0"
+                                        x-transition:leave-end="transform opacity-0 scale-95 translate-y-[-10px]"
+                                        :style="ddStyle"
+                                        class="bg-white dark:bg-slate-900 rounded-[14px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-slate-800 p-2 overflow-hidden">
+                                        <ul class="flex flex-col gap-1 max-h-64 overflow-y-auto p-0.5" @scroll.stop>
+                                            <template x-for="(obs, idx) in obsData" :key="obs.id">
+                                                <li>
+                                                    <button type="button"
+                                                        @click='addObservation(obs.id, "{{ instance.id }}", obs.label, obs.recommendation); value = obs.id; open = false; $nextTick(() => { value = "" })'
+                                                        :class='value === obs.id ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
+                                                        class="w-full flex items-start gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all text-left">
+                                                        <span
+                                                            :class='value === obs.id ? "text-white" : "text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400"'
+                                                            class="flex items-center justify-center w-6 h-6 rounded-full transition-colors flex-shrink-0 text-xs font-bold mt-0.5"
+                                                            x-text="(obs.label || '')[0]?.toUpperCase() || '?'"></span>
+                                                        <span class="leading-snug" x-text="obs.label"></span>
+                                                    </button>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
+                    </div><!-- end sticky wrapper -->
+
+                    {% if instance.assessment_checklist_snapshot and instance.assessment_checklist_snapshot.observations %}
+                    <!-- Observations Table (scrolls normally) -->
+                    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm" id="observations-table-{{ instance.id }}">
+                                <thead class="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                            Observation
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                            Recommendation
+                                        </th>
+                                        <th class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                            Evidence
+                                        </th>
+                                        <th class="px-6 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                            Actions
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="observations-tbody-{{ instance.id }}">
+                                    {% for obs in observations %}
+                                    <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors" data-obs-id="{{ obs.id }}">
+                                        <td class="px-6 py-4 text-sm text-slate-900 dark:text-white break-words">{{ obs.observation_text }}</td>
+                                        <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 break-words">{{ obs.recommendation_text }}</td>
+                                        <td class="px-6 py-4 text-sm">
+                                            <button type="button"
+                                                hx-get="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}/evidence"
+                                                hx-target="#modal-body" hx-swap="innerHTML" @click="$store.modal.show()"
+                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors cursor-pointer">
+                                                <span class="material-symbols-outlined text-[12px]">attach_file</span>
+                                                {{ obs.evidence_files|length }} file{{ 's' if obs.evidence_files|length != 1 else '' }}
+                                            </button>
+                                        </td>
+                                        <td class="px-6 py-4 text-center">
+                                            <button type="button" hx-delete="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}" hx-target="#control-panel" hx-swap="innerHTML"
+                                                class="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                                                <span class="material-symbols-outlined">delete</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr id="empty-obs-{{ instance.id }}">
+                                        <td colspan="4" class="p-4 w-full">
+                                            <div class="w-full flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl py-8 text-center">
+                                                <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+                                                    <span class="material-symbols-outlined text-slate-400 dark:text-slate-500" style="font-size:24px">rate_review</span>
+                                                </div>
+                                                <div>
+                                                    <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No observations documented yet</p>
+                                                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Document your findings and recommendations by selecting an observation above.</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                <!-- Right Metadata Sidebar -->
+                <div class="space-y-3 flex flex-col">
+                    <!-- Control Details Card -->
+                    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm p-4">
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Asset Information</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1.5">Application Name</p>
+                                <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ session.name }}</span>
+                            </div>
+                            {% if session.asset_identifier %}
+                            <div>
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1.5">IP / Identifier</p>
+                                <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ session.asset_identifier }}</span>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1.5">Domain</p>
+                                <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ domain.label or domain.audit_domain_type.name }}</span>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1.5">Control ID</p>
+                                <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ instance.control_id_snapshot }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audit Trail Card -->
+                    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm p-4">
+                        <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Audit Trail</h3>
+                        <div>
+                            {% if instance.updated_at %}
+                            <div class="flex gap-3 pb-3">
+                                <div class="flex flex-col items-center flex-shrink-0">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-primary mt-0.5"></div>
+                                    <div class="w-px flex-1 bg-slate-200 dark:bg-slate-700 mt-1"></div>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-900 dark:text-white">Updated</p>
+                                    <p class="text-xs text-slate-500 mt-0.5">{{ instance.updated_at.strftime('%b %d, %Y %H:%M') }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="flex gap-3">
+                                <div class="flex flex-col items-center flex-shrink-0">
+                                    <div class="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600 mt-0.5"></div>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-700 dark:text-slate-400">Created</p>
+                                    <p class="text-xs text-slate-500 mt-0.5">{{ instance.created_at.strftime('%b %d, %Y') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 </form>
 
 <!-- Sticky Save Bar -->
-<div class="sticky bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-2 justify-end gap-2">
-  <button type="button" onclick="htmx.ajax('GET', '/projects/{{ project.id }}/domains/{{ session.audit_domain.id }}/sessions/{{ session.id }}', {target: '#control-panel', swap: 'innerHTML'})"
-    class="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50">
-    Cancel
-  </button>
-  <button type="submit" form="control-form"
-    class="px-4 py-1.5 bg-primary text-white rounded-lg text-xs font-bold shadow-sm shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-1.5">
-    <span class="material-symbols-outlined text-[12px]">save</span>
-    Save
-  </button>
+<div class="sticky bottom-0 left-0 right-0 z-20 mt-6 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-t border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-3">
+<div class="ml-auto flex items-center gap-3">
+        <button type="button"
+            onclick="document.getElementById('control-form').dispatchEvent(new Event('htmx:abort'))"
+            class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50">
+            Cancel
+        </button>
+        <button type="submit" form="control-form"
+            class="px-5 py-2 bg-primary text-white rounded-lg text-sm font-bold shadow-sm shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2">
+            <span class="material-symbols-outlined" style="font-size:18px">save</span>
+            Save &amp; Continue
+        </button>
+    </div>
 </div>
+
+
+<script>
+function addObservation(observationId, instanceId, label, recommendation) {
+        if (!observationId) return;
+
+        // Create unique ID for new observation
+        const newId = 'new_' + Date.now();
+
+        // Create a new row
+        const tbody = document.getElementById(`observations-tbody-${instanceId}`);
+
+        // Remove empty state if exists
+        const emptyRow = document.getElementById(`empty-obs-${instanceId}`);
+        if (emptyRow) {
+            emptyRow.remove();
+        }
+
+        const newRow = document.createElement('tr');
+        newRow.className = 'border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors';
+        newRow.setAttribute('data-obs-id', newId);
+        newRow.innerHTML = `
+            <td class="px-6 py-4 text-sm text-slate-900 dark:text-white break-words">${label}</td>
+            <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 break-words">${recommendation}</td>
+            <td class="px-6 py-4 text-sm" data-evidence-cell="true">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
+                    <span class="material-symbols-outlined" style="font-size:12px">attach_file</span>
+                    Save to add evidence
+                </span>
+            </td>
+            <td class="px-6 py-4 text-center">
+                <button type="button" class="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" onclick="deleteObservationRow('${newId}', '${instanceId}')">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </td>
+        `;
+
+        tbody.appendChild(newRow);
+
+        // Hide the dropdown panel
+        document.getElementById(`observation-dropdown-${instanceId}`).classList.add('hidden');
+    }
+
+    function deleteObservationRow(obsId, instanceId) {
+        const row = document.querySelector(`tr[data-obs-id="${obsId}"]`);
+        if (row) {
+            row.remove();
+        }
+
+        // Show empty state if no observations
+        const tbody = document.getElementById(`observations-tbody-${instanceId}`);
+        if (tbody.querySelectorAll('tr[data-obs-id]').length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.id = `empty-obs-${instanceId}`;
+            emptyRow.innerHTML = `
+                <td colspan="4" class="p-4 w-full">
+                    <div class="w-full flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl py-8 text-center">
+                        <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+                            <span class="material-symbols-outlined text-slate-400 dark:text-slate-500" style="font-size:24px">rate_review</span>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No observations documented yet</p>
+                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Document your findings and recommendations by selecting an observation above.</p>
+                        </div>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(emptyRow);
+        }
+    }
+
+    function prepareObservationsData() {
+        const form = document.getElementById('control-form');
+        // Remove any previously prepared hidden inputs
+        form.querySelectorAll('input[name^="observation_"]').forEach(input => input.remove());
+
+        const addInput = (name, value) => {
+            const inp = document.createElement('input');
+            inp.type = 'hidden';
+            inp.name = name;
+            inp.value = value;
+            form.appendChild(inp);
+        };
+
+        // Collect only NEW observations (data-obs-id starts with "new_") from table DOM
+        let idx = 0;
+        document.querySelectorAll('tbody[id^="observations-tbody-"] tr[data-obs-id]').forEach(row => {
+            const obsId = row.getAttribute('data-obs-id');
+            if (!obsId || !obsId.startsWith('new_')) return;
+            const cells = row.querySelectorAll('td');
+            addInput(`observation_${idx}_text`, cells[0]?.textContent?.trim() || '');
+            addInput(`observation_${idx}_recommendation`, cells[1]?.textContent?.trim() || '');
+            addInput(`observation_${idx}_is_new`, 'true');
+            idx++;
+        });
+    }
+</script>
+
+<style>
+    .fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        0% {
+            opacity: 0;
+            transform: translateY(5px);
+        }
+
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>

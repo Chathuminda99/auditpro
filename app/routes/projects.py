@@ -698,11 +698,25 @@ async def create_session(
     # Seed control instances for this domain's type
     control_count = hc_repo.seed_control_instances(session, domain.audit_domain_type_id)
 
-    return RedirectResponse(
-        url=f"/projects/{project_id}/domains/{domain_id}/sessions/{session.id}",
-        status_code=303,
-        headers=htmx_toast(f"Session created with {control_count} controls"),
+    # Reload domain and compute stats
+    domain = hc_repo.get_domain_with_sessions(uuid.UUID(domain_id))
+    session_stats = {}
+    for s in domain.sessions:
+        session_stats[str(s.id)] = hc_repo.get_session_stats(s.id)
+
+    response = templates.TemplateResponse(
+        "projects/health_check/_sessions_list.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "domain": domain,
+            "session_stats": session_stats,
+        },
     )
+    response.headers["HX-Redirect"] = f"/projects/{project_id}/domains/{domain_id}/sessions/{session.id}"
+    response.headers.update(htmx_toast(f"Session created with {control_count} controls"))
+    return response
 
 
 @router.delete("/{project_id}/domains/{domain_id}/sessions/{session_id}", response_class=HTMLResponse)
@@ -823,12 +837,13 @@ async def get_control_panel(
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    instance = hc_repo.get_control_instance_by_id(uuid.UUID(instance_id))
+    instance = hc_repo.get_control_instance_with_observations(uuid.UUID(instance_id))
 
     if not instance or instance.audit_session.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     session = instance.audit_session
+    domain = session.audit_domain
 
     if str(session.id) != session_id or str(session.audit_domain_id) != domain_id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
@@ -839,8 +854,10 @@ async def get_control_panel(
             "request": request,
             "user": user,
             "project": project,
+            "domain": domain,
             "session": session,
             "instance": instance,
+            "observations": instance.observations,
         },
     )
 
@@ -1075,6 +1092,327 @@ async def delete_evidence(
             "user": user,
             "project": project,
             "instance": instance,
+        },
+        headers=htmx_toast("Evidence removed"),
+    )
+
+
+# ===== Observation Routes =====
+
+@router.post("/{project_id}/domains/{domain_id}/sessions/{session_id}/controls/{instance_id}/details", response_class=HTMLResponse)
+async def update_control_with_observations(
+    project_id: str, domain_id: str, session_id: str, instance_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Update control instance status, notes, and handle observations."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
+
+    if not project:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    instance = hc_repo.get_control_instance_with_observations(uuid.UUID(instance_id))
+
+    if not instance or instance.audit_session.project_id != project.id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    session = instance.audit_session
+
+    if str(session.id) != session_id:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    form_data = await request.form()
+    status_value = form_data.get("status", ControlInstanceStatus.NOT_STARTED.value)
+    notes = form_data.get("notes", "").strip() or None
+
+    try:
+        status = ControlInstanceStatus(status_value)
+    except ValueError:
+        status = ControlInstanceStatus.NOT_STARTED
+
+    # Update the instance
+    hc_repo.update_control_instance(instance_id, status, notes, user.id)
+
+    # Handle new observations
+    idx = 0
+    while True:
+        obs_text = form_data.get(f"observation_{idx}_text")
+        if obs_text is None:
+            break
+        obs_is_new = form_data.get(f"observation_{idx}_is_new")
+        if obs_is_new == "true":
+            obs_rec = form_data.get(f"observation_{idx}_recommendation", "").strip() or None
+            hc_repo.create_observation(instance.id, obs_text.strip(), obs_rec)
+        idx += 1
+
+    # Reload instance with updated observations
+    instance = hc_repo.get_control_instance_with_observations(instance.id)
+
+    return templates.TemplateResponse(
+        "projects/health_check/_control_panel.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "session": session,
+            "instance": instance,
+            "observations": instance.observations,
+        },
+        headers=htmx_toast("Assessment saved"),
+    )
+
+
+@router.delete("/{project_id}/domains/{domain_id}/sessions/{session_id}/observations/{obs_id}", response_class=HTMLResponse)
+async def delete_observation(
+    project_id: str, domain_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Delete an observation."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    obs = hc_repo.get_observation_by_id(uuid.UUID(obs_id))
+
+    if not obs or obs.control_instance.audit_session_id != uuid.UUID(session_id):
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    instance = obs.control_instance
+
+    # Delete the observation
+    hc_repo.delete_observation(uuid.UUID(obs_id))
+
+    # Reload instance with updated observations
+    instance = hc_repo.get_control_instance_with_observations(instance.id)
+
+    return templates.TemplateResponse(
+        "projects/health_check/_control_panel.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "session": instance.audit_session,
+            "instance": instance,
+            "observations": instance.observations,
+        },
+        headers=htmx_toast("Observation deleted"),
+    )
+
+
+@router.get("/{project_id}/domains/{domain_id}/sessions/{session_id}/observations/{obs_id}/evidence", response_class=HTMLResponse)
+async def get_observation_evidence(
+    project_id: str, domain_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Get observation evidence panel."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    obs = hc_repo.get_observation_by_id(uuid.UUID(obs_id))
+
+    if not obs or obs.control_instance.audit_session_id != uuid.UUID(session_id):
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    session = obs.control_instance.audit_session
+
+    return templates.TemplateResponse(
+        "projects/health_check/_hc_observation_evidence_panel.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "session": session,
+            "observation": obs,
+        },
+    )
+
+
+@router.post("/{project_id}/domains/{domain_id}/sessions/{session_id}/observations/{obs_id}/evidence/text", response_class=HTMLResponse)
+async def add_observation_text_evidence(
+    project_id: str, domain_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Add text evidence to an observation."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    obs = hc_repo.get_observation_by_id(uuid.UUID(obs_id))
+
+    if not obs or obs.control_instance.audit_session_id != uuid.UUID(session_id):
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    form_data = await request.form()
+    content = form_data.get("content", "").strip()
+
+    if not content:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    hc_repo.add_observation_text_note(uuid.UUID(obs_id), content)
+
+    # Reload observation with updated evidence
+    obs = hc_repo.get_observation_by_id(uuid.UUID(obs_id))
+    session = obs.control_instance.audit_session
+
+    return templates.TemplateResponse(
+        "projects/health_check/_hc_observation_evidence_panel.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "session": session,
+            "observation": obs,
+        },
+        headers=htmx_toast("Evidence added"),
+    )
+
+
+@router.post("/{project_id}/domains/{domain_id}/sessions/{session_id}/observations/{obs_id}/evidence/image", response_class=HTMLResponse)
+async def add_observation_image_evidence(
+    project_id: str, domain_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Add image evidence to an observation."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    obs = hc_repo.get_observation_by_id(uuid.UUID(obs_id))
+
+    if not obs or obs.control_instance.audit_session_id != uuid.UUID(session_id):
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    form_data = await request.form()
+    file = form_data.get("file")
+
+    if not file or not isinstance(file, UploadFile):
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    # Validate file extension
+    allowed_extensions = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".pdf"}
+    file_ext = Path(file.filename).suffix.lower()
+
+    if file_ext not in allowed_extensions:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    # Create upload directory
+    upload_dir = Path(f"static/uploads/health_check/{session_id}")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save file
+    file_id = str(uuid.uuid4())
+    file_path = upload_dir / f"{file_id}{file_ext}"
+    file_contents = await file.read()
+    file_size = len(file_contents)
+
+    with open(file_path, "wb") as f:
+        f.write(file_contents)
+
+    # Store as relative path with leading /
+    relative_path = f"/{file_path}"
+    hc_repo.add_observation_image(uuid.UUID(obs_id), file.filename, relative_path, file_size)
+
+    # Reload observation with updated evidence
+    obs = hc_repo.get_observation_by_id(uuid.UUID(obs_id))
+    session = obs.control_instance.audit_session
+
+    return templates.TemplateResponse(
+        "projects/health_check/_hc_observation_evidence_panel.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "session": session,
+            "observation": obs,
+        },
+        headers=htmx_toast("Evidence added"),
+    )
+
+
+@router.delete("/{project_id}/domains/{domain_id}/sessions/{session_id}/observations/{obs_id}/evidence/{ev_id}", response_class=HTMLResponse)
+async def delete_observation_evidence(
+    project_id: str, domain_id: str, session_id: str, obs_id: str, ev_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Delete evidence from an observation."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, uuid.UUID(project_id))
+
+    if not project:
+        return RedirectResponse(url="/projects", status_code=302)
+
+    hc_repo = HealthCheckRepository(db)
+    obs = hc_repo.get_observation_by_id(uuid.UUID(obs_id))
+
+    if not obs or obs.control_instance.audit_session_id != uuid.UUID(session_id):
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    # Get evidence to delete
+    from app.models.health_check import SessionControlObservationEvidence
+    ev = db.query(SessionControlObservationEvidence).filter(
+        SessionControlObservationEvidence.id == uuid.UUID(ev_id),
+        SessionControlObservationEvidence.session_control_observation_id == uuid.UUID(obs_id),
+    ).first()
+
+    if not ev:
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+
+    # Delete file from disk if it's an image type
+    if ev.evidence_type == "image" and ev.file_path:
+        file_path = ev.file_path.lstrip("/")
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
+
+    # Delete the evidence record
+    hc_repo.delete_observation_evidence(uuid.UUID(ev_id))
+
+    # Reload observation with updated evidence
+    obs = hc_repo.get_observation_by_id(uuid.UUID(obs_id))
+    session = obs.control_instance.audit_session
+
+    return templates.TemplateResponse(
+        "projects/health_check/_hc_observation_evidence_panel.html",
+        {
+            "request": request,
+            "user": user,
+            "project": project,
+            "session": session,
+            "observation": obs,
         },
         headers=htmx_toast("Evidence removed"),
     )

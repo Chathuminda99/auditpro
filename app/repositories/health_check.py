@@ -10,6 +10,8 @@ from app.models.health_check import (
     AuditSession,
     SessionControlInstance,
     ControlInstanceEvidenceFile,
+    SessionControlObservation,
+    SessionControlObservationEvidence,
     ControlToDomainMapping,
     ControlInstanceStatus,
 )
@@ -168,6 +170,10 @@ class HealthCheckRepository(BaseRepository[AuditDomain]):
                 control_id_snapshot=ctrl.control_id,
                 control_title_snapshot=ctrl.name,
                 control_description_snapshot=ctrl.description,
+                requirements_text_snapshot=ctrl.requirements_text,
+                testing_procedures_text_snapshot=ctrl.testing_procedures_text,
+                check_points_text_snapshot=ctrl.check_points_text,
+                assessment_checklist_snapshot=ctrl.assessment_checklist,
                 status=ControlInstanceStatus.NOT_STARTED,
             )
             self.db.add(instance)
@@ -260,6 +266,104 @@ class HealthCheckRepository(BaseRepository[AuditDomain]):
         """Delete evidence item."""
         ev = self.db.query(ControlInstanceEvidenceFile).filter(
             ControlInstanceEvidenceFile.id == evidence_id
+        ).first()
+        if not ev:
+            return False
+        self.db.delete(ev)
+        self.db.commit()
+        return True
+
+    # === Observations ===
+
+    def get_control_instance_with_observations(
+        self, instance_id: UUID
+    ) -> SessionControlInstance | None:
+        """Load control instance with observations and their evidence files."""
+        return self.db.query(SessionControlInstance).filter(
+            SessionControlInstance.id == instance_id
+        ).options(
+            joinedload(SessionControlInstance.observations).joinedload(
+                SessionControlObservation.evidence_files
+            ),
+            joinedload(SessionControlInstance.evidence_files),
+        ).first()
+
+    def create_observation(
+        self,
+        instance_id: UUID,
+        observation_text: str,
+        recommendation_text: str | None = None,
+    ) -> SessionControlObservation:
+        """Create a new observation for a control instance."""
+        obs = SessionControlObservation(
+            session_control_instance_id=instance_id,
+            observation_text=observation_text,
+            recommendation_text=recommendation_text,
+        )
+        self.db.add(obs)
+        self.db.commit()
+        self.db.refresh(obs, ["evidence_files"])
+        return obs
+
+    def delete_observation(self, observation_id: UUID) -> bool:
+        """Delete an observation (cascades to evidence)."""
+        obs = self.db.query(SessionControlObservation).filter(
+            SessionControlObservation.id == observation_id
+        ).first()
+        if not obs:
+            return False
+        self.db.delete(obs)
+        self.db.commit()
+        return True
+
+    def get_observation_by_id(
+        self, observation_id: UUID
+    ) -> SessionControlObservation | None:
+        """Get an observation by ID with evidence files."""
+        return self.db.query(SessionControlObservation).filter(
+            SessionControlObservation.id == observation_id
+        ).options(
+            joinedload(SessionControlObservation.evidence_files)
+        ).first()
+
+    def add_observation_text_note(
+        self, observation_id: UUID, content: str
+    ) -> SessionControlObservationEvidence:
+        """Add a text note as evidence to an observation."""
+        ev = SessionControlObservationEvidence(
+            session_control_observation_id=observation_id,
+            evidence_type="text_note",
+            content=content,
+        )
+        self.db.add(ev)
+        self.db.commit()
+        self.db.refresh(ev)
+        return ev
+
+    def add_observation_image(
+        self,
+        observation_id: UUID,
+        filename: str,
+        file_path: str,
+        file_size: int,
+    ) -> SessionControlObservationEvidence:
+        """Add an image as evidence to an observation."""
+        ev = SessionControlObservationEvidence(
+            session_control_observation_id=observation_id,
+            evidence_type="image",
+            filename=filename,
+            file_path=file_path,
+            file_size=file_size,
+        )
+        self.db.add(ev)
+        self.db.commit()
+        self.db.refresh(ev)
+        return ev
+
+    def delete_observation_evidence(self, evidence_id: UUID) -> bool:
+        """Delete observation evidence."""
+        ev = self.db.query(SessionControlObservationEvidence).filter(
+            SessionControlObservationEvidence.id == evidence_id
         ).first()
         if not ev:
             return False

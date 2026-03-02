@@ -1,0 +1,128 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - img [ref=e6]
+        - generic [ref=e8]:
+          - heading "AuditPro" [level=1] [ref=e9]
+          - paragraph [ref=e10]: Compliance
+      - navigation [ref=e11]:
+        - link "Dashboard" [ref=e12] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e14]
+          - generic [ref=e17]: Dashboard
+        - paragraph [ref=e19]: Main
+        - link "Projects" [ref=e20] [cursor=pointer]:
+          - /url: /projects
+          - img [ref=e22]
+          - generic [ref=e25]: Projects
+        - paragraph [ref=e27]: Library
+        - link "Frameworks" [ref=e28] [cursor=pointer]:
+          - /url: /frameworks
+          - img [ref=e29]
+          - generic [ref=e31]: Frameworks
+        - link "Clients" [ref=e32] [cursor=pointer]:
+          - /url: /clients
+          - img [ref=e34]
+          - generic [ref=e39]: Clients
+        - link "Reports SOON" [ref=e40]:
+          - /url: "#"
+          - img [ref=e42]
+          - generic [ref=e43]: Reports
+          - generic [ref=e44]: SOON
+        - paragraph [ref=e46]: Admin
+        - link "Controls" [ref=e47] [cursor=pointer]:
+          - /url: /admin/controls
+          - img [ref=e49]
+          - generic [ref=e53]: Controls
+        - link "Users" [ref=e54] [cursor=pointer]:
+          - /url: /admin/users
+          - img [ref=e56]
+          - generic [ref=e61]: Users
+      - generic [ref=e62]:
+        - link "Settings" [ref=e63] [cursor=pointer]:
+          - /url: "#"
+          - img [ref=e65]
+          - generic [ref=e69]: Settings
+        - button "Collapse" [ref=e70] [cursor=pointer]:
+          - img [ref=e72]
+          - generic [ref=e74]: Collapse
+    - generic [ref=e75]:
+      - banner [ref=e76]:
+        - generic [ref=e77]:
+          - button "Toggle sidebar" [ref=e78] [cursor=pointer]:
+            - img [ref=e79]
+          - generic [ref=e80]:
+            - img [ref=e82]
+            - textbox "Search..." [ref=e85]
+        - generic [ref=e86]:
+          - link "New Project" [ref=e87] [cursor=pointer]:
+            - /url: /projects/new
+            - img [ref=e88]
+            - generic [ref=e89]: New Project
+          - button "Notifications" [ref=e91] [cursor=pointer]:
+            - img [ref=e92]
+          - button "Help" [ref=e96] [cursor=pointer]:
+            - img [ref=e97]
+          - button "Theme" [ref=e101] [cursor=pointer]:
+            - img [ref=e102]
+          - button "A Administrator" [ref=e109] [cursor=pointer]:
+            - generic [ref=e110]: A
+            - generic [ref=e111]: Administrator
+            - img [ref=e113]
+      - navigation [ref=e115]:
+        - link "Projects" [ref=e116] [cursor=pointer]:
+          - /url: /projects
+        - generic [ref=e117]: /
+        - link "Health check 2" [ref=e118] [cursor=pointer]:
+          - /url: /projects/675eaa83-bff7-4316-8c1d-1032f38a2666
+        - generic [ref=e119]: /
+        - generic [ref=e120]: Application
+      - main [ref=e121]:
+        - generic [ref=e122]:
+          - generic [ref=e125]:
+            - heading "Application" [level=1] [ref=e126]
+            - generic [ref=e127]:
+              - generic [ref=e128]: hourglass_top
+              - text: In Progress
+          - generic [ref=e129]:
+            - generic [ref=e130]:
+              - generic [ref=e131]: Total Sessions
+              - generic [ref=e132]: "1"
+            - generic [ref=e133]:
+              - generic [ref=e134]: Controls / Session
+              - generic [ref=e135]: "5"
+            - generic [ref=e136]:
+              - generic [ref=e137]: Overall Progress
+              - generic [ref=e138]: 0%
+          - generic [ref=e139]:
+            - generic [ref=e140]:
+              - heading "Asset Sessions" [level=2] [ref=e141]
+              - button "add Add Session" [ref=e142] [cursor=pointer]:
+                - generic [ref=e143]: add
+                - text: Add Session
+            - generic [ref=e146]:
+              - generic [ref=e147]:
+                - generic [ref=e148]:
+                  - heading "LM Application Review" [level=3] [ref=e149]
+                  - paragraph [ref=e150]: 10.10.10.10
+                - button "delete" [ref=e151] [cursor=pointer]:
+                  - generic [ref=e152]: delete
+              - generic [ref=e154]:
+                - generic [ref=e155]: Progress
+                - generic [ref=e156]: 0 / 5
+              - generic [ref=e158]:
+                - generic [ref=e159]:
+                  - generic [ref=e160]: check_circle
+                  - text: 0 Pass
+                - generic [ref=e161]:
+                  - generic [ref=e162]: close_circle
+                  - text: 0 Fail
+                - generic [ref=e163]:
+                  - generic [ref=e164]: schedule
+                  - text: 4 Not Started
+              - link "View Session arrow_forward" [ref=e165] [cursor=pointer]:
+                - /url: /projects/675eaa83-bff7-4316-8c1d-1032f38a2666/domains/bd4b536a-1c05-4fb7-8ae8-142ab3732171/sessions/42597748-66bb-448b-8673-6a0457d82da3
+                - text: View Session
+                - generic [ref=e166]: arrow_forward
+  - generic: v0.5.13

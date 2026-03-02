@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String, Text, Enum as SQLEnum, ForeignKey, Integer, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import BaseModel, TimestampMixin
+from sqlalchemy.dialects.postgresql import JSONB
 
 if TYPE_CHECKING:
     from app.models.framework import FrameworkControl
@@ -148,6 +149,10 @@ class SessionControlInstance(BaseModel, TimestampMixin):
     control_id_snapshot: Mapped[str] = mapped_column(String(50), nullable=False)
     control_title_snapshot: Mapped[str] = mapped_column(String(255), nullable=False)
     control_description_snapshot: Mapped[str] = mapped_column(Text, nullable=True)
+    requirements_text_snapshot: Mapped[str] = mapped_column(Text, nullable=True)
+    testing_procedures_text_snapshot: Mapped[str] = mapped_column(Text, nullable=True)
+    check_points_text_snapshot: Mapped[str] = mapped_column(Text, nullable=True)
+    assessment_checklist_snapshot: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     status: Mapped[ControlInstanceStatus] = mapped_column(
         SQLEnum(ControlInstanceStatus, values_callable=lambda x: [e.value for e in x]),
         nullable=False,
@@ -173,6 +178,9 @@ class SessionControlInstance(BaseModel, TimestampMixin):
     evidence_files: Mapped[list["ControlInstanceEvidenceFile"]] = relationship(
         back_populates="control_instance", cascade="all, delete-orphan"
     )
+    observations: Mapped[list["SessionControlObservation"]] = relationship(
+        back_populates="control_instance", cascade="all, delete-orphan"
+    )
 
 
 class ControlInstanceEvidenceFile(BaseModel, TimestampMixin):
@@ -193,5 +201,47 @@ class ControlInstanceEvidenceFile(BaseModel, TimestampMixin):
 
     # Relationships
     control_instance: Mapped["SessionControlInstance"] = relationship(
+        back_populates="evidence_files"
+    )
+
+
+class SessionControlObservation(BaseModel, TimestampMixin):
+    """Observation (finding) documented during control assessment."""
+
+    __tablename__ = "session_control_observations"
+
+    session_control_instance_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("session_control_instances.id"), nullable=False
+    )
+    observation_text: Mapped[str] = mapped_column(Text, nullable=False)
+    recommendation_text: Mapped[str] = mapped_column(Text, nullable=True)
+
+    # Relationships
+    control_instance: Mapped["SessionControlInstance"] = relationship(
+        back_populates="observations"
+    )
+    evidence_files: Mapped[list["SessionControlObservationEvidence"]] = relationship(
+        back_populates="observation", cascade="all, delete-orphan"
+    )
+
+
+class SessionControlObservationEvidence(BaseModel, TimestampMixin):
+    """Evidence (text note or file) attached to an observation."""
+
+    __tablename__ = "session_control_observation_evidence"
+
+    session_control_observation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("session_control_observations.id"), nullable=False
+    )
+    evidence_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # 'text_note' or 'image'
+    content: Mapped[str] = mapped_column(Text, nullable=True)  # For text_note
+    filename: Mapped[str] = mapped_column(String(255), nullable=True)  # For image
+    file_path: Mapped[str] = mapped_column(String(512), nullable=True)  # For image
+    file_size: Mapped[int] = mapped_column(Integer, nullable=True)  # For image
+
+    # Relationships
+    observation: Mapped["SessionControlObservation"] = relationship(
         back_populates="evidence_files"
     )
