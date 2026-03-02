@@ -14,9 +14,19 @@ from app.models.project import (
     ProjectResponse,
     ProjectEvidenceFile,
     ProjectStatus,
+    ProjectType,
     ResponseStatus,
 )
 from app.models.workflow import WorkflowExecution, WorkflowExecutionStatus
+from app.models.health_check import (
+    AuditDomainType,
+    ControlToDomainMapping,
+    AuditDomain,
+    AuditSession,
+    SessionControlInstance,
+    ControlInstanceEvidenceFile,
+    ControlInstanceStatus,
+)
 
 __all__ = [
     "BaseModel",
@@ -34,7 +44,15 @@ __all__ = [
     "ProjectResponse",
     "ProjectEvidenceFile",
     "ProjectStatus",
+    "ProjectType",
     "ResponseStatus",
     "WorkflowExecution",
     "WorkflowExecutionStatus",
+    "AuditDomainType",
+    "ControlToDomainMapping",
+    "AuditDomain",
+    "AuditSession",
+    "SessionControlInstance",
+    "ControlInstanceEvidenceFile",
+    "ControlInstanceStatus",
 ]

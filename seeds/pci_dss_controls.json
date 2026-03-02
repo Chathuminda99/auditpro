@@ -1,0 +1,204 @@
+{
+  "framework_name": "PCI DSS",
+  "framework_version": "v4.0.1",
+  "domains": [
+    {
+      "name": "Application",
+      "sort_order": 1,
+      "control_ids": ["6.1.1", "6.2.1", "6.2.2", "6.3.1", "6.5.1"]
+    },
+    {
+      "name": "Database",
+      "sort_order": 2,
+      "control_ids": ["2.2.1", "2.3.1", "7.2.1", "8.3.1", "10.2.1"]
+    },
+    {
+      "name": "Servers",
+      "sort_order": 3,
+      "control_ids": ["2.2.1", "2.2.2", "6.3.1", "10.2.1", "12.3.1"]
+    },
+    {
+      "name": "Network Devices",
+      "sort_order": 4,
+      "control_ids": ["1.2.1", "1.3.1", "1.4.1", "10.2.1", "11.2.1"]
+    },
+    {
+      "name": "Operational Security",
+      "sort_order": 5,
+      "control_ids": ["12.1.1", "12.3.1", "12.5.1", "12.6.1", "10.3.1"]
+    },
+    {
+      "name": "HR / Call Center",
+      "sort_order": 6,
+      "control_ids": ["12.6.1", "12.6.2", "8.3.1", "2.1.1"]
+    }
+  ],
+  "sections": [
+    {
+      "section_id": "Requirement 1",
+      "name": "Requirement 1: Install and Maintain Network Access Controls"
+    },
+    {
+      "section_id": "Requirement 2",
+      "name": "Requirement 2: Apply Secure Configurations to All System Components"
+    },
+    {
+      "section_id": "Requirement 6",
+      "name": "Requirement 6: Develop and Maintain a Secure System"
+    },
+    {
+      "section_id": "Requirement 7",
+      "name": "Requirement 7: Restrict Access to System Components"
+    },
+    {
+      "section_id": "Requirement 8",
+      "name": "Requirement 8: Identify and Authenticate Access"
+    },
+    {
+      "section_id": "Requirement 10",
+      "name": "Requirement 10: Log and Monitor all Access to System Components"
+    },
+    {
+      "section_id": "Requirement 11",
+      "name": "Requirement 11: Test Security Systems and Processes"
+    },
+    {
+      "section_id": "Requirement 12",
+      "name": "Requirement 12: Support Organizational Security"
+    }
+  ],
+  "controls": [
+    {
+      "control_id": "1.2.1",
+      "section": "Requirement 1",
+      "name": "Documentation of network diagram and supporting topologies",
+      "description": "Current network diagram and supporting documentation of network architecture and configuration"
+    },
+    {
+      "control_id": "1.3.1",
+      "section": "Requirement 1",
+      "name": "Prohibition of direct public access between Internet and system components",
+      "description": "Firewall rules prevent direct public access to payment cardholder data environment"
+    },
+    {
+      "control_id": "1.4.1",
+      "section": "Requirement 1",
+      "name": "Security policies and procedures for firewall configuration standards",
+      "description": "Documented and implemented firewall rule set that describes access to networks and systems"
+    },
+    {
+      "control_id": "2.1.1",
+      "section": "Requirement 2",
+      "name": "Inventory of system components in scope for PCI DSS",
+      "description": "All system components are identified and documented"
+    },
+    {
+      "control_id": "2.2.1",
+      "section": "Requirement 2",
+      "name": "Secure configuration standards for all system components",
+      "description": "Configuration standards established and documented for all system components"
+    },
+    {
+      "control_id": "2.2.2",
+      "section": "Requirement 2",
+      "name": "Disabling of unnecessary services, protocols, daemons, and functions",
+      "description": "Unnecessary services and processes are disabled or removed from system components"
+    },
+    {
+      "control_id": "2.3.1",
+      "section": "Requirement 2",
+      "name": "Configuration of administrative access to system components",
+      "description": "System components are configured to prevent administrative access by unauthorized individuals"
+    },
+    {
+      "control_id": "6.1.1",
+      "section": "Requirement 6",
+      "name": "Establishment of process to identify security vulnerabilities",
+      "description": "Process established to identify and evaluate security vulnerabilities"
+    },
+    {
+      "control_id": "6.2.1",
+      "section": "Requirement 6",
+      "name": "Development and test environments separated from production",
+      "description": "Development, test, and production environments are separated"
+    },
+    {
+      "control_id": "6.2.2",
+      "section": "Requirement 6",
+      "name": "Separation of duties in development, test, and production environments",
+      "description": "Separation of duties enforced between development, test, and production personnel"
+    },
+    {
+      "control_id": "6.3.1",
+      "section": "Requirement 6",
+      "name": "Formal change control procedures for production systems",
+      "description": "Formal change control procedures documented and implemented for production systems"
+    },
+    {
+      "control_id": "6.5.1",
+      "section": "Requirement 6",
+      "name": "Injection flaws are prevented or mitigated",
+      "description": "Injection flaws are prevented or protected against through code review and secure coding practices"
+    },
+    {
+      "control_id": "7.2.1",
+      "section": "Requirement 7",
+      "name": "Access to system components limited to authorized personnel",
+      "description": "Access to system components restricted to authorized personnel"
+    },
+    {
+      "control_id": "8.3.1",
+      "section": "Requirement 8",
+      "name": "Multi-factor authentication for all users with access",
+      "description": "Multi-factor authentication is implemented for all users with remote access"
+    },
+    {
+      "control_id": "10.2.1",
+      "section": "Requirement 10",
+      "name": "Logging of access to audit trails",
+      "description": "User access is logged and audit trails maintain user identity, access, and account"
+    },
+    {
+      "control_id": "10.3.1",
+      "section": "Requirement 10",
+      "name": "Protection of audit trails from unauthorized modifications",
+      "description": "Audit trails are protected from unauthorized modifications"
+    },
+    {
+      "control_id": "11.2.1",
+      "section": "Requirement 11",
+      "name": "Periodic vulnerability scanning of in-scope systems",
+      "description": "Quarterly vulnerability scanning of systems in scope for PCI DSS"
+    },
+    {
+      "control_id": "12.1.1",
+      "section": "Requirement 12",
+      "name": "Information security policy established and maintained",
+      "description": "Information security policy is established and communicated to all personnel"
+    },
+    {
+      "control_id": "12.3.1",
+      "section": "Requirement 12",
+      "name": "Acceptable use policies established for authorized system users",
+      "description": "Acceptable use policy established and documented for authorized system users"
+    },
+    {
+      "control_id": "12.5.1",
+      "section": "Requirement 12",
+      "name": "Roles and responsibilities assigned for information security",
+      "description": "Roles and responsibilities for security are assigned to appropriate personnel"
+    },
+    {
+      "control_id": "12.6.1",
+      "section": "Requirement 12",
+      "name": "Personnel awareness program for information security",
+      "description": "Security awareness program is established to educate personnel"
+    },
+    {
+      "control_id": "12.6.2",
+      "section": "Requirement 12",
+      "name": "Personnel training on information security is documented",
+      "description": "Personnel training and periodic awareness program are documented"
+    }
+  ]
+}

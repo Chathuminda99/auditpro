@@ -41,6 +41,10 @@
   - [x] User management interface (/admin/users)
   - [x] Route-level and repository-level access guards
   - [x] Control detail metadata shows project owner
+- [ ] Create Project Hierachy
+  - [ ] Defining how reporting happens
+  - [ ] Obeservations and Controls structure
+  - [ ] Audit session categories(Application, Server, DB etc)
 
 ## Antigravity UX/UI suggestions
 

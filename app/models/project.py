@@ -9,6 +9,13 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
+class ProjectType(str, Enum):
+    """Project type enumeration."""
+
+    STANDARD_AUDIT = "standard_audit"
+    PCI_DSS_HEALTH_CHECK = "pci_dss_health_check"
+
+
 class ProjectStatus(str, Enum):
     """Project status enumeration."""
 
@@ -52,6 +59,11 @@ class Project(BaseModel, TimestampMixin):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     status: Mapped[ProjectStatus] = mapped_column(
         SQLEnum(ProjectStatus), nullable=False, default=ProjectStatus.DRAFT
+    )
+    project_type: Mapped[ProjectType] = mapped_column(
+        SQLEnum(ProjectType, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        server_default="standard_audit",
     )
 
     # Relationships

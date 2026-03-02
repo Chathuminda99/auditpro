@@ -21,6 +21,7 @@ from app.models import (
     ChecklistItem,
     Project,
     ProjectStatus,
+    ProjectType,
 )
 from app.models.user import UserRole
 from app.utils.security import hash_password
@@ -542,6 +543,7 @@ def seed_database():
                 name="Acme ISO 27001 Assessment",
                 description="ISO 27001 compliance assessment for Acme Corp",
                 status=ProjectStatus.IN_PROGRESS,
+                project_type=ProjectType.STANDARD_AUDIT,
             )
 
             if beta_id and soc2_framework_id:
@@ -554,6 +556,7 @@ def seed_database():
                     name="Beta SOC 2 Readiness",
                     description="SOC 2 Type II readiness assessment for Beta Ltd",
                     status=ProjectStatus.DRAFT,
+                    project_type=ProjectType.STANDARD_AUDIT,
                 )
                 db.add_all([project1, project2])
             else:
@@ -572,6 +575,17 @@ def seed_database():
                     p.owner_id = admin_user.id
                 db.commit()
                 print(f"✓ Back-filled owner_id on {len(projects_without_owner)} existing project(s)")
+
+            # Back-fill project_type on existing projects that lack it
+            projects_without_type = db.query(Project).filter(
+                Project.tenant_id == tenant_id,
+                Project.project_type.is_(None),
+            ).all()
+            if projects_without_type:
+                for p in projects_without_type:
+                    p.project_type = ProjectType.STANDARD_AUDIT
+                db.commit()
+                print(f"✓ Back-filled project_type on {len(projects_without_type)} existing project(s)")
             else:
                 print("✓ Projects already exist")
 

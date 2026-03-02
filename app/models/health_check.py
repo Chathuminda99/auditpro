@@ -1,0 +1,197 @@
+"""Models for PCI DSS Health Check audits and related structures."""
+
+import uuid
+from enum import Enum
+from typing import TYPE_CHECKING
+from sqlalchemy import String, Text, Enum as SQLEnum, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from app.models.base import BaseModel, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.framework import FrameworkControl
+    from app.models.project import Project
+    from app.models.user import User
+
+
+class ControlInstanceStatus(str, Enum):
+    """Status of a control instance in a health check session."""
+
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    PASS = "pass"
+    FAIL = "fail"
+    NA = "na"
+
+
+class AuditDomainType(BaseModel, TimestampMixin):
+    """Global domain template for health checks, scoped to a framework.
+
+    Example: "Application", "Database", "Network Devices" for PCI DSS.
+    """
+
+    __tablename__ = "audit_domain_types"
+
+    framework_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("frameworks.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Relationships
+    control_mappings: Mapped[list["ControlToDomainMapping"]] = relationship(
+        back_populates="audit_domain_type", cascade="all, delete-orphan"
+    )
+    audit_domains: Mapped[list["AuditDomain"]] = relationship(
+        back_populates="audit_domain_type", cascade="all, delete-orphan"
+    )
+
+
+class ControlToDomainMapping(BaseModel, TimestampMixin):
+    """Many-to-many mapping: which controls apply to which audit domains.
+
+    Example: Req 2.2.1 applies to "Application", "Database", and "Network Devices".
+    """
+
+    __tablename__ = "control_to_domain_mappings"
+
+    audit_domain_type_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("audit_domain_types.id"), nullable=False
+    )
+    framework_control_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("framework_controls.id"), nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "audit_domain_type_id",
+            "framework_control_id",
+            name="uq_domain_control_mapping",
+        ),
+    )
+
+    # Relationships
+    audit_domain_type: Mapped["AuditDomainType"] = relationship(
+        back_populates="control_mappings"
+    )
+    framework_control: Mapped["FrameworkControl"] = relationship()
+
+
+class AuditDomain(BaseModel, TimestampMixin):
+    """A domain added to a specific health-check project.
+
+    Parent node in the hierarchy: Project → AuditDomain → AuditSession → SessionControlInstance.
+    """
+
+    __tablename__ = "audit_domains"
+
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id"), nullable=False
+    )
+    audit_domain_type_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("audit_domain_types.id"), nullable=False
+    )
+    label: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Relationships
+    project: Mapped["Project"] = relationship()
+    audit_domain_type: Mapped["AuditDomainType"] = relationship(
+        back_populates="audit_domains"
+    )
+    sessions: Mapped[list["AuditSession"]] = relationship(
+        back_populates="audit_domain", cascade="all, delete-orphan"
+    )
+
+
+class AuditSession(BaseModel, TimestampMixin):
+    """A specific asset/instance under an audit domain.
+
+    Child node: AuditDomain → AuditSession → SessionControlInstance.
+    Example: "ABC Application" or "10.0.0.1 — Web Server".
+    """
+
+    __tablename__ = "audit_sessions"
+
+    audit_domain_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("audit_domains.id"), nullable=False
+    )
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    asset_identifier: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+
+    # Relationships
+    audit_domain: Mapped["AuditDomain"] = relationship(back_populates="sessions")
+    project: Mapped["Project"] = relationship()
+    control_instances: Mapped[list["SessionControlInstance"]] = relationship(
+        back_populates="audit_session", cascade="all, delete-orphan"
+    )
+
+
+class SessionControlInstance(BaseModel, TimestampMixin):
+    """Snapshot of a control in an audit session.
+
+    Captures the control's state at session creation time, plus assessment status.
+    """
+
+    __tablename__ = "session_control_instances"
+
+    audit_session_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("audit_sessions.id"), nullable=False
+    )
+    framework_control_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("framework_controls.id"), nullable=False
+    )
+    control_id_snapshot: Mapped[str] = mapped_column(String(50), nullable=False)
+    control_title_snapshot: Mapped[str] = mapped_column(String(255), nullable=False)
+    control_description_snapshot: Mapped[str] = mapped_column(Text, nullable=True)
+    status: Mapped[ControlInstanceStatus] = mapped_column(
+        SQLEnum(ControlInstanceStatus, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        default=ControlInstanceStatus.NOT_STARTED,
+    )
+    notes: Mapped[str] = mapped_column(Text, nullable=True)
+    assessed_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+    reviewed_by_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )
+
+    # Relationships
+    audit_session: Mapped["AuditSession"] = relationship(back_populates="control_instances")
+    framework_control: Mapped["FrameworkControl"] = relationship()
+    assessed_by: Mapped["User | None"] = relationship(
+        "User", foreign_keys=[assessed_by_id]
+    )
+    reviewed_by: Mapped["User | None"] = relationship(
+        "User", foreign_keys=[reviewed_by_id]
+    )
+    evidence_files: Mapped[list["ControlInstanceEvidenceFile"]] = relationship(
+        back_populates="control_instance", cascade="all, delete-orphan"
+    )
+
+
+class ControlInstanceEvidenceFile(BaseModel, TimestampMixin):
+    """Evidence (text note or file) attached to a control instance."""
+
+    __tablename__ = "control_instance_evidence_files"
+
+    session_control_instance_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("session_control_instances.id"), nullable=False
+    )
+    evidence_type: Mapped[str] = mapped_column(
+        String(50), nullable=False
+    )  # 'text_note' or 'file'
+    content: Mapped[str] = mapped_column(Text, nullable=True)  # For text_note
+    filename: Mapped[str] = mapped_column(String(255), nullable=True)  # For file
+    file_path: Mapped[str] = mapped_column(String(512), nullable=True)  # For file
+    file_size: Mapped[int] = mapped_column(Integer, nullable=True)  # For file
+
+    # Relationships
+    control_instance: Mapped["SessionControlInstance"] = relationship(
+        back_populates="evidence_files"
+    )
