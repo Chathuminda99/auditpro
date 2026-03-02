@@ -1,10 +1,12 @@
-{# Custom Alert Component #}
-{# Semantic alerts for info, success, warning, error, tailored to the app theme #}
-{# Usage:
+{# Custom Alert Component
+Semantic alerts for info, success, warning, error, tailored to the app theme
+
+Usage:
 {% include "components/alert.html" %}
-{# Requires variables via context: type (string), title (string), message (string), dismissible (boolean) #}
-{# Example: include "components/alert.html" with type="success", title="Created", message="Project created",
-dismissible=true %}
+
+Requires variables via context: type (string), title (string), message (string), dismissible (boolean)
+
+Example: include "components/alert.html" with type="success", title="Created", message="Project created", dismissible=true
 #}
 
 {% set _t = type | default('info') %}
