@@ -2315,7 +2315,7 @@ async def create_observation(
 
 
 @router.delete("/{project_id}/observations/{observation_id}", response_class=HTMLResponse)
-async def delete_observation(
+async def delete_project_observation(
     project_id: str, observation_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Delete an observation and its evidence files."""
