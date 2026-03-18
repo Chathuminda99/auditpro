@@ -363,114 +363,178 @@
                                 </template>
                             </div>
 
-                            <!-- Selected Observations Table -->
-                            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                                <div class="overflow-x-auto">
-                                    <table class="w-full text-sm">
-                                        <thead class="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700">
-                                            <tr>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider" style="width:28%">Observation</th>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider" style="width:33%">Recommendation</th>
-                                                <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider" style="width:31%">Evidence</th>
-                                                <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider" style="width:8%">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for obs in observations %}
-                                            <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors align-top"
-                                                data-obs-id="{{ obs.id }}" data-obs-saved="true">
-                                                <td class="px-4 py-3">
-                                                    <p class="text-sm text-slate-900 dark:text-white leading-snug break-words">{{ obs.observation_text }}</p>
-                                                </td>
-                                                <td class="px-4 py-3">
-                                                    <textarea class="obs-recommendation w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
-                                                        rows="3" placeholder="Add recommendation...">{{ obs.recommendation_text or '' }}</textarea>
-                                                </td>
-                                                <td class="px-4 py-3">
+                            <!-- Selected Observations - Inline Expandable -->
+                            <div class="space-y-3">
+                                <!-- Saved Observations -->
+                                {% for obs in observations %}
+                                <div x-data="{ expanded: false }"
+                                    class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                                    data-obs-id="{{ obs.id }}" data-obs-saved="true">
+                                    <!-- Collapsed Header -->
+                                    <div @click="expanded = !expanded"
+                                        class="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <div class="flex items-start gap-3 flex-1 min-w-0">
+                                            <span class="material-symbols-outlined text-primary flex-shrink-0 mt-0.5">assignment_turned_in</span>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-sm font-medium text-slate-900 dark:text-white break-words">{{ obs.observation_text }}</p>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ obs.evidence_files|length }} evidence item{{ 's' if obs.evidence_files|length != 1 else '' }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2 flex-shrink-0">
+                                            <span :class="expanded ? 'rotate-180' : ''" class="material-symbols-outlined text-slate-400 transition-transform">expand_more</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Expanded Content -->
+                                    <template x-if="expanded">
+                                        <div class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 p-4 space-y-4">
+                                            <!-- Recommendation -->
+                                            <div>
+                                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-2">Recommendation</label>
+                                                <textarea class="obs-recommendation w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+                                                    rows="2" placeholder="Add recommendation...">{{ obs.recommendation_text or '' }}</textarea>
+                                            </div>
+
+                                            <!-- Evidence Section -->
+                                            <div>
+                                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-2">Evidence</label>
+                                                <div class="space-y-2">
+                                                    <!-- Text Notes -->
                                                     {% set text_notes = obs.evidence_files | selectattr("evidence_type", "equalto", "text_note") | list %}
+                                                    {% if text_notes %}
                                                     <div class="space-y-2">
-                                                        {% if text_notes %}
-                                                        <div class="space-y-1">
-                                                            {% for note in text_notes %}
-                                                            <div class="flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                                                <span class="material-symbols-outlined text-[14px] text-blue-400 flex-shrink-0 mt-0.5">sticky_note_2</span>
-                                                                <p class="text-xs text-slate-700 dark:text-slate-300 flex-1 break-words leading-relaxed">{{ note.content }}</p>
+                                                        {% for note in text_notes %}
+                                                        <div class="flex items-start gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/30">
+                                                            <span class="material-symbols-outlined text-[14px] text-blue-500 flex-shrink-0 mt-0.5">sticky_note_2</span>
+                                                            <div class="flex-1 min-w-0">
+                                                                <p class="text-xs text-slate-700 dark:text-slate-300 break-words">{{ note.content }}</p>
                                                             </div>
-                                                            {% endfor %}
+                                                            <button type="button"
+                                                                hx-delete="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}/evidence/{{ note.id }}"
+                                                                hx-target="#control-panel" hx-swap="innerHTML"
+                                                                class="p-1 text-blue-400 hover:text-red-600 transition-colors flex-shrink-0">
+                                                                <span class="material-symbols-outlined text-[16px]">close</span>
+                                                            </button>
                                                         </div>
-                                                        {% endif %}
-                                                        <button type="button"
-                                                            hx-get="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}/evidence"
-                                                            hx-target="#modal-body" hx-swap="innerHTML"
-                                                            @click="$store.modal.show()"
-                                                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors">
-                                                            <span class="material-symbols-outlined text-[12px]">attach_file</span>
-                                                            {{ obs.evidence_files|length }} item{{ 's' if obs.evidence_files|length != 1 else '' }}
-                                                        </button>
+                                                        {% endfor %}
                                                     </div>
-                                                </td>
-                                                <td class="px-4 py-3 text-center">
-                                                    <button type="button"
-                                                        hx-delete="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}"
-                                                        hx-target="#control-panel" hx-swap="innerHTML"
-                                                        hx-confirm="Delete this observation?"
-                                                        class="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                                                        <span class="material-symbols-outlined text-[18px]">delete</span>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                            <!-- New observations (Alpine.js managed) -->
-                                            <template x-for="obs in newObs" :key="obs.id">
-                                                <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors align-top bg-primary/5 dark:bg-primary/10"
-                                                    :data-obs-id="obs.id">
-                                                    <td class="px-4 py-3">
-                                                        <div class="flex items-start gap-2">
-                                                            <span class="flex-shrink-0 mt-0.5 text-[10px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded uppercase tracking-wide leading-none">New</span>
-                                                            <p class="text-sm text-slate-900 dark:text-white leading-snug break-words" x-text="obs.label"></p>
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-4 py-3">
-                                                        <textarea x-model="obs.recommendation"
-                                                            class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
-                                                            rows="3" placeholder="Edit recommendation..."></textarea>
-                                                    </td>
-                                                    <td class="px-4 py-3 space-y-2">
-                                                        <textarea x-model="obs.note"
-                                                            class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
-                                                            rows="2" placeholder="Add text note..."></textarea>
-                                                        <p class="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                                                            <span class="material-symbols-outlined text-[13px]">info</span>
-                                                            File upload available after saving
-                                                        </p>
-                                                    </td>
-                                                    <td class="px-4 py-3 text-center">
-                                                        <button type="button" @click="removeNewObs(obs.id)"
-                                                            class="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
-                                                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                                                    {% endif %}
+
+                                                    <!-- Quick Add Text Note -->
+                                                    <form hx-post="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}/evidence/text"
+                                                        hx-target="#control-panel" hx-swap="innerHTML" class="flex gap-2">
+                                                        <input type="text" name="content" placeholder="Add quick note..."
+                                                            class="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors">
+                                                        <button type="submit"
+                                                            class="px-3 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors flex items-center gap-1">
+                                                            <span class="material-symbols-outlined text-[16px]">add</span>
+                                                            Note
                                                         </button>
-                                                    </td>
-                                                </tr>
-                                            </template>
-                                            <!-- Empty state -->
-                                            <template x-if="newObs.length === 0 && {{ observations|length }} === 0">
-                                                <tr>
-                                                    <td colspan="4" class="p-8">
-                                                        <div class="flex flex-col items-center gap-3 text-center">
-                                                            <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
-                                                                <span class="material-symbols-outlined text-slate-400 dark:text-slate-500" style="font-size:24px">rate_review</span>
-                                                            </div>
-                                                            <div>
-                                                                <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No observations added yet</p>
-                                                                <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Click an observation above to add it to your assessment</p>
-                                                            </div>
+                                                    </form>
+
+                                                    <!-- File Evidence -->
+                                                    {% set file_evidence = obs.evidence_files | selectattr("evidence_type", "equalto", "image") | list %}
+                                                    {% if file_evidence %}
+                                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                                                        {% for file in file_evidence %}
+                                                        <div class="relative group rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                                                            <img src="/projects/{{ project.id }}/download-evidence/{{ file.id }}" alt="Evidence" class="w-full h-32 object-cover">
+                                                            <button type="button"
+                                                                hx-delete="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}/evidence/{{ file.id }}"
+                                                                hx-target="#control-panel" hx-swap="innerHTML"
+                                                                class="absolute top-1 right-1 p-1 bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <span class="material-symbols-outlined text-[16px]">delete</span>
+                                                            </button>
                                                         </div>
-                                                    </td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
+                                                        {% endfor %}
+                                                    </div>
+                                                    {% endif %}
+
+                                                    <!-- Quick File Upload -->
+                                                    <label class="flex items-center gap-2 p-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors">
+                                                        <span class="material-symbols-outlined text-slate-400">image</span>
+                                                        <span class="text-xs font-medium text-slate-600 dark:text-slate-400">Add image</span>
+                                                        <input type="file" name="file" accept="image/*,.pdf" class="hidden"
+                                                            hx-post="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}/evidence/image"
+                                                            hx-target="#control-panel" hx-swap="innerHTML"
+                                                            @change="htmx.ajax('POST', htmx.closest(this, 'form').action, {values: new FormData(htmx.closest(this, 'form'))}); this.value = ''">
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <!-- Footer with Actions -->
+                                            <div class="flex gap-2 justify-end pt-2 border-t border-slate-200 dark:border-slate-700">
+                                                <button type="button" @click="expanded = false"
+                                                    class="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+                                                    Collapse
+                                                </button>
+                                                <button type="button"
+                                                    hx-delete="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}"
+                                                    hx-target="#control-panel" hx-swap="innerHTML"
+                                                    hx-confirm="Delete this observation?"
+                                                    class="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors">
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
+                                {% endfor %}
+
+                                <!-- New Observations (Alpine managed) -->
+                                <template x-for="obs in newObs" :key="obs.id">
+                                    <div x-data="{ expanded: true }"
+                                        class="border border-primary/30 bg-primary/5 dark:bg-primary/10 rounded-lg overflow-hidden"
+                                        :data-obs-id="obs.id">
+                                        <!-- Header -->
+                                        <div class="flex items-center justify-between gap-3 px-4 py-3">
+                                            <div class="flex items-start gap-3 flex-1">
+                                                <span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-primary/20 text-primary uppercase tracking-wide leading-none flex-shrink-0 mt-0.5">New</span>
+                                                <div class="flex-1">
+                                                    <p class="text-sm font-medium text-slate-900 dark:text-white" x-text="obs.label"></p>
+                                                </div>
+                                            </div>
+                                            <button type="button" @click="removeNewObs(obs.id)"
+                                                class="p-1.5 text-slate-400 hover:text-red-600 transition-colors flex-shrink-0">
+                                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                                            </button>
+                                        </div>
+
+                                        <!-- Expanded Content -->
+                                        <template x-if="expanded">
+                                            <div class="border-t border-primary/20 bg-white dark:bg-slate-800/30 p-4 space-y-3">
+                                                <!-- Recommendation -->
+                                                <div>
+                                                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-2">Recommendation</label>
+                                                    <textarea x-model="obs.recommendation"
+                                                        class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+                                                        rows="2" placeholder="Edit recommendation..."></textarea>
+                                                </div>
+
+                                                <!-- Text Note -->
+                                                <div>
+                                                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-2">Quick Note</label>
+                                                    <textarea x-model="obs.note"
+                                                        class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+                                                        rows="2" placeholder="Add text note..."></textarea>
+                                                    <p class="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1 mt-1">
+                                                        <span class="material-symbols-outlined text-[13px]">info</span>
+                                                        File upload available after saving
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+
+                                <!-- Empty State -->
+                                <template x-if="newObs.length === 0 && {{ observations|length }} === 0">
+                                    <div class="py-12 px-6 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg">
+                                        <span class="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mx-auto block mb-3">rate_review</span>
+                                        <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">No observations added yet</h3>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400">Click an observation above to add it to your assessment</p>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </template>
