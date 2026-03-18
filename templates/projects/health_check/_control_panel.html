@@ -204,7 +204,8 @@
     hx-post="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/controls/{{ instance.id }}/details"
     hx-target="#control-panel" hx-swap="innerHTML" hx-ext="response-targets" class="mt-6 fade-in"
     @submit="prepareObservationsData()"
-    @htmx:afterSwap="htmx.process(document.getElementById('control-panel'))">
+    @htmx:afterSwap="htmx.process(document.getElementById('control-panel'))"
+    x-data="controlPanelData()">
 
     <!-- Form Controls -->
     <div class="space-y-6">
@@ -470,7 +471,7 @@
                                                     Collapse
                                                 </button>
                                                 <button type="button"
-                                                    @click="if(confirm('Delete this observation?')) { deleting = true; htmx.ajax('DELETE', '/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}', {target: '#control-panel', swap: 'innerHTML'}) }"
+                                                    @click="$root.$data.openDeleteConfirm('{{ obs.id }}', '/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}')"
                                                     :disabled="deleting"
                                                     class="px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <span x-show="!deleting">Delete</span>
@@ -601,6 +602,46 @@
                         </div>
                     </template>
                 </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div x-show="$root.$data.deleteConfirm.open" x-cloak x-transition.opacity
+        class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+        @click.self="$root.$data.deleteConfirm.open = false"
+        @keydown.escape.window="$root.$data.deleteConfirm.open = false">
+        <div class="bg-white dark:bg-slate-900 rounded-xl shadow-lg max-w-sm w-full border border-slate-200 dark:border-slate-800 p-6 space-y-4"
+            @click.stop>
+            <!-- Icon -->
+            <div class="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 mx-auto">
+                <span class="material-symbols-outlined text-red-600 dark:text-red-400" style="font-size:24px">delete_outline</span>
+            </div>
+
+            <!-- Message -->
+            <div class="text-center">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">Delete observation?</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400">This action cannot be undone. The observation and all its evidence will be permanently deleted.</p>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex gap-3 justify-end pt-2">
+                <button type="button" @click="$root.$data.deleteConfirm.open = false"
+                    class="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                    Cancel
+                </button>
+                <button type="button" @click="$root.$data.confirmDelete()"
+                    :disabled="$root.$data.deleteConfirm.deleting"
+                    class="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                    <span x-show="!$root.$data.deleteConfirm.deleting">Delete</span>
+                    <span x-show="$root.$data.deleteConfirm.deleting" class="inline-flex items-center gap-1">
+                        <svg class="animate-spin" style="width:14px;height:14px" viewBox="0 0 24 24" fill="none">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"></path>
+                        </svg>
+                        Deleting...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
 </form>
 
 <!-- Sticky Save Bar -->
@@ -682,6 +723,36 @@
                 idx++;
             }
         }
+    }
+</script>
+
+<script>
+    function controlPanelData() {
+        return {
+            deleteConfirm: {
+                open: false,
+                url: '',
+                deleting: false
+            },
+            openDeleteConfirm(obsId, url) {
+                this.deleteConfirm.url = url;
+                this.deleteConfirm.open = true;
+                this.deleteConfirm.deleting = false;
+            },
+            confirmDelete() {
+                if (!this.deleteConfirm.url) return;
+                this.deleteConfirm.deleting = true;
+                htmx.ajax('DELETE', this.deleteConfirm.url, {
+                    target: '#control-panel',
+                    swap: 'innerHTML'
+                });
+                // Close modal after a brief delay to show final state
+                setTimeout(() => {
+                    this.deleteConfirm.open = false;
+                    this.deleteConfirm.deleting = false;
+                }, 300);
+            }
+        };
     }
 </script>
 
