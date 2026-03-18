@@ -1,3 +1,32 @@
+<script>
+    function controlPanelData() {
+        return {
+            deleteConfirm: {
+                open: false,
+                url: '',
+                deleting: false
+            },
+            openDeleteConfirm(obsId, url) {
+                this.deleteConfirm.url = url;
+                this.deleteConfirm.open = true;
+                this.deleteConfirm.deleting = false;
+            },
+            confirmDelete() {
+                if (!this.deleteConfirm.url) return;
+                this.deleteConfirm.deleting = true;
+                htmx.ajax('DELETE', this.deleteConfirm.url, {
+                    target: '#control-panel',
+                    swap: 'innerHTML'
+                });
+                setTimeout(() => {
+                    this.deleteConfirm.open = false;
+                    this.deleteConfirm.deleting = false;
+                }, 300);
+            }
+        };
+    }
+</script>
+
 <!-- Header -->
 <div class="flex flex-col gap-4 fade-in">
     <div class="flex flex-wrap items-start justify-between gap-4">
@@ -723,36 +752,6 @@
                 idx++;
             }
         }
-    }
-</script>
-
-<script>
-    function controlPanelData() {
-        return {
-            deleteConfirm: {
-                open: false,
-                url: '',
-                deleting: false
-            },
-            openDeleteConfirm(obsId, url) {
-                this.deleteConfirm.url = url;
-                this.deleteConfirm.open = true;
-                this.deleteConfirm.deleting = false;
-            },
-            confirmDelete() {
-                if (!this.deleteConfirm.url) return;
-                this.deleteConfirm.deleting = true;
-                htmx.ajax('DELETE', this.deleteConfirm.url, {
-                    target: '#control-panel',
-                    swap: 'innerHTML'
-                });
-                // Close modal after a brief delay to show final state
-                setTimeout(() => {
-                    this.deleteConfirm.open = false;
-                    this.deleteConfirm.deleting = false;
-                }, 300);
-            }
-        };
     }
 </script>
 
