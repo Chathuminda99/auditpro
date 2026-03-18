@@ -226,7 +226,7 @@
         <!-- Sticky area: Checkpoint + Observations toolbar freeze together while scrolling -->
         <div class="sticky top-4 z-10 space-y-3">
 
-            {% if instance.assessment_checklist_snapshot and instance.assessment_checklist_snapshot.check_points_text %}
+            {% if instance.check_points_text_snapshot %}
             <div x-data="{ open: false }"
                 class="rounded-xl border border-purple-200 dark:border-purple-800/60 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-lg shadow-purple-100/60 dark:shadow-purple-900/20 relative overflow-hidden">
                 <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
@@ -256,8 +256,8 @@
                     x-transition:leave-end="opacity-0"
                     class="border-t border-purple-100 dark:border-purple-900/40 px-8 py-6 max-h-52 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-300 dark:scrollbar-thumb-purple-700">
                     <div class="space-y-1">
-                        {% set lines = instance.assessment_checklist_snapshot.check_points_text.strip().split('\n') if
-                        instance.assessment_checklist_snapshot.check_points_text else [] %}
+                        {% set lines = instance.check_points_text_snapshot.strip().split('\n') if
+                        instance.check_points_text_snapshot else [] %}
                         {% for line in lines %}
                         {% if line.strip() %}
                         {% set indent_level = (line | length) - (line | trim | length) %}
@@ -297,182 +297,175 @@
                         </div>
                         {% endif %}
 
-                        <!-- Observations toolbar (sticky) -->
-                        <div
-                            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden mt-3">
-                            <div class="px-6 py-4 flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-primary">assignment_turned_in</span>
-                                    <h3 class="font-bold text-slate-900 dark:text-white">Observations</h3>
-                                </div>
-                                <button type="button"
-                                    class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 flex items-center gap-2"
-                                    onclick="document.getElementById('observation-dropdown-{{ instance.id }}').classList.toggle('hidden')">
-                                    <span class="material-symbols-outlined text-[14px]">add</span>
-                                    Add Observation
-                                </button>
-                            </div>
-
-                            <!-- Dropdown to select predefined observations -->
-                            <div id="observation-dropdown-{{ instance.id }}"
-                                class="hidden border-t border-slate-100 dark:border-slate-800 p-6 bg-slate-50 dark:bg-slate-800/50">
-                                <label
-                                    class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">
-                                    Select Observation
-                                </label>
-                                {% set obs_list = [] %}
-                                {% if instance.assessment_checklist_snapshot and
-                                instance.assessment_checklist_snapshot.observations %}
-                                {% for obs in instance.assessment_checklist_snapshot.observations %}
-                                {% set _ = obs_list.append({"id": obs.id|string, "label": obs.label, "recommendation":
-                                obs.recommendation or ""}) %}
-                                {% endfor %}
-                                {% endif %}
-                                <div x-data='{
-                        open: false,
-                        value: "",
-                        obsData: {{ obs_list | tojson | safe }},
-                        ddStyle: {},
-                        toggleDropdown() {
-                            if (this.open) { this.open = false; return; }
-                            const rect = this.$refs.trigger.getBoundingClientRect();
-                            this.ddStyle = { position: "fixed", top: (rect.bottom + 6) + "px", left: rect.left + "px", width: rect.width + "px", zIndex: 9999 };
-                            this.open = true;
-                            const container = document.getElementById("control-panel");
-                            if (container) {
-                                container.addEventListener("scroll", () => { this.open = false; }, { once: true });
-                            }
-                        }
-                    }' @click.away="open = false" @scroll.window="open = false" class="relative">
-                                    <button type="button" x-ref="trigger" @click="toggleDropdown()"
-                                        class="w-full flex items-center justify-between h-10 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-primary/30">
-                                        <span
-                                            x-text="value ? (obsData.find(o => o.id === value)?.label || '').substring(0, 60) : '-- Choose an observation --'"
-                                            :class="value ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'"
-                                            class="truncate text-left flex-1"></span>
-                                        <span
-                                            class="pointer-events-none text-slate-400 ml-2 transition-transform duration-200"
-                                            :class="open ? 'rotate-180' : ''">
-                                            <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                                                fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="6 9 12 15 18 9"></polyline>
-                                            </svg>
-                                        </span>
-                                    </button>
-                                    <div x-show="open" x-cloak x-transition:enter="transition ease-out duration-150"
-                                        x-transition:enter-start="transform opacity-0 scale-95 translate-y-[-10px]"
-                                        x-transition:enter-end="transform opacity-100 scale-100 translate-y-0"
-                                        x-transition:leave="transition ease-in duration-100"
-                                        x-transition:leave-start="transform opacity-100 scale-100 translate-y-0"
-                                        x-transition:leave-end="transform opacity-0 scale-95 translate-y-[-10px]"
-                                        :style="ddStyle"
-                                        class="bg-white dark:bg-slate-900 rounded-[14px] shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-slate-800 p-2 overflow-hidden">
-                                        <ul class="flex flex-col gap-1 max-h-64 overflow-y-auto p-0.5" @scroll.stop>
-                                            <template x-for="(obs, idx) in obsData" :key="obs.id">
-                                                <li>
-                                                    <button type="button"
-                                                        @click='addObservation(obs.id, "{{ instance.id }}", obs.label, obs.recommendation); value = obs.id; open = false; $nextTick(() => { value = "" })'
-                                                        :class='value === obs.id ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
-                                                        class="w-full flex items-start gap-2.5 px-2.5 py-2 rounded-lg text-sm font-medium transition-all text-left">
-                                                        <span
-                                                            :class='value === obs.id ? "text-white" : "text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400"'
-                                                            class="flex items-center justify-center w-6 h-6 rounded-full transition-colors flex-shrink-0 text-xs font-bold mt-0.5"
-                                                            x-text="(obs.label || '')[0]?.toUpperCase() || '?'"></span>
-                                                        <span class="leading-snug" x-text="obs.label"></span>
-                                                    </button>
-                                                </li>
-                                            </template>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                     </div><!-- end sticky wrapper -->
 
-                    {% if instance.assessment_checklist_snapshot and instance.assessment_checklist_snapshot.observations
-                    %}
-                    <!-- Observations Table (scrolls normally) -->
-                    <div
-                        class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm" id="observations-table-{{ instance.id }}">
-                                <thead
-                                    class="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700">
-                                    <tr>
-                                        <th
-                                            class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                            Observation
-                                        </th>
-                                        <th
-                                            class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                            Recommendation
-                                        </th>
-                                        <th
-                                            class="px-6 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                            Evidence
-                                        </th>
-                                        <th
-                                            class="px-6 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                            Actions
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody id="observations-tbody-{{ instance.id }}">
-                                    {% for obs in observations %}
-                                    <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
-                                        data-obs-id="{{ obs.id }}">
-                                        <td class="px-6 py-4 text-sm text-slate-900 dark:text-white break-words">{{
-                                            obs.observation_text }}</td>
-                                        <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 break-words">{{
-                                            obs.recommendation_text }}</td>
-                                        <td class="px-6 py-4 text-sm">
-                                            <button type="button"
-                                                hx-get="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}/evidence"
-                                                hx-target="#modal-body" hx-swap="innerHTML" @click="$store.modal.show()"
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors cursor-pointer">
-                                                <span class="material-symbols-outlined text-[12px]">attach_file</span>
-                                                {{ obs.evidence_files|length }} file{{ 's' if obs.evidence_files|length
-                                                != 1 else '' }}
-                                            </button>
-                                        </td>
-                                        <td class="px-6 py-4 text-center">
-                                            <button type="button"
-                                                hx-delete="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}"
-                                                hx-target="#control-panel" hx-swap="innerHTML"
-                                                class="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors">
-                                                <span class="material-symbols-outlined">delete</span>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% else %}
-                                    <tr id="empty-obs-{{ instance.id }}">
-                                        <td colspan="4" class="p-4 w-full">
-                                            <div
-                                                class="w-full flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl py-8 text-center">
-                                                <div
-                                                    class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
-                                                    <span
-                                                        class="material-symbols-outlined text-slate-400 dark:text-slate-500"
-                                                        style="font-size:24px">rate_review</span>
-                                                </div>
-                                                <div>
-                                                    <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">
-                                                        No observations documented yet</p>
-                                                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-                                                        Document your findings and recommendations by selecting an
-                                                        observation above.</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    {% set obs_list = [] %}
+                    {% if instance.assessment_checklist_snapshot and instance.assessment_checklist_snapshot.observations %}
+                    {% for obs in instance.assessment_checklist_snapshot.observations %}
+                    {% set _ = obs_list.append({"id": obs.id|string, "label": obs.label, "recommendation": obs.recommendation or ""}) %}
+                    {% endfor %}
                     {% endif %}
+
+                    <!-- Observations Section -->
+                    <div x-data='{
+                            availableObs: {{ obs_list | tojson | safe }},
+                            newObs: [],
+                            selectObs(obs) {
+                                this.newObs.push({
+                                    id: "new_" + Date.now(),
+                                    label: obs.label,
+                                    recommendation: obs.recommendation || "",
+                                    note: ""
+                                });
+                            },
+                            removeNewObs(id) {
+                                this.newObs = this.newObs.filter(o => o.id !== id);
+                            },
+                            init() {
+                                window["obsState_{{ instance.id }}"] = this;
+                            }
+                         }'
+                         id="obs-section-{{ instance.id }}"
+                         class="space-y-4 mt-4">
+
+                        <!-- Available Observations List -->
+                        <div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+                            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-primary text-[20px]">assignment_turned_in</span>
+                                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Observations</h3>
+                                </div>
+                                <span class="text-xs text-slate-400 dark:text-slate-500">Click to add to assessment</span>
+                            </div>
+                            <template x-if="availableObs.length > 0">
+                                <div class="divide-y divide-slate-50 dark:divide-slate-800/60 max-h-52 overflow-y-auto">
+                                    <template x-for="obs in availableObs" :key="obs.id">
+                                        <div @click="selectObs(obs)"
+                                             class="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors group">
+                                            <span class="material-symbols-outlined text-[18px] text-slate-300 dark:text-slate-600 group-hover:text-primary transition-colors flex-shrink-0">add_circle</span>
+                                            <p class="text-sm text-slate-700 dark:text-slate-300 flex-1 leading-snug" x-text="obs.label"></p>
+                                            <span class="text-[10px] font-semibold text-primary uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 whitespace-nowrap">+ Add</span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                            <template x-if="availableObs.length === 0">
+                                <div class="px-5 py-6 text-center">
+                                    <p class="text-sm text-slate-400 dark:text-slate-500 italic">No predefined observations available for this control</p>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Selected Observations Table -->
+                        <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-700">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider" style="width:28%">Observation</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider" style="width:33%">Recommendation</th>
+                                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider" style="width:31%">Evidence</th>
+                                            <th class="px-4 py-3 text-center text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider" style="width:8%">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for obs in observations %}
+                                        <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors align-top"
+                                            data-obs-id="{{ obs.id }}" data-obs-saved="true">
+                                            <td class="px-4 py-3">
+                                                <p class="text-sm text-slate-900 dark:text-white leading-snug break-words">{{ obs.observation_text }}</p>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                <textarea class="obs-recommendation w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+                                                    rows="3" placeholder="Add recommendation...">{{ obs.recommendation_text or '' }}</textarea>
+                                            </td>
+                                            <td class="px-4 py-3">
+                                                {% set text_notes = obs.evidence_files | selectattr("evidence_type", "equalto", "text_note") | list %}
+                                                <div class="space-y-2">
+                                                    {% if text_notes %}
+                                                    <div class="space-y-1">
+                                                        {% for note in text_notes %}
+                                                        <div class="flex items-start gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                                            <span class="material-symbols-outlined text-[14px] text-blue-400 flex-shrink-0 mt-0.5">sticky_note_2</span>
+                                                            <p class="text-xs text-slate-700 dark:text-slate-300 flex-1 break-words leading-relaxed">{{ note.content }}</p>
+                                                        </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                    {% endif %}
+                                                    <button type="button"
+                                                        hx-get="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}/evidence"
+                                                        hx-target="#modal-body" hx-swap="innerHTML"
+                                                        @click="$store.modal.show()"
+                                                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors">
+                                                        <span class="material-symbols-outlined text-[12px]">attach_file</span>
+                                                        {{ obs.evidence_files|length }} item{{ 's' if obs.evidence_files|length != 1 else '' }}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-3 text-center">
+                                                <button type="button"
+                                                    hx-delete="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}"
+                                                    hx-target="#control-panel" hx-swap="innerHTML"
+                                                    hx-confirm="Delete this observation?"
+                                                    class="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                                                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                        <!-- New observations (Alpine.js managed) -->
+                                        <template x-for="obs in newObs" :key="obs.id">
+                                            <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors align-top bg-primary/5 dark:bg-primary/10"
+                                                :data-obs-id="obs.id">
+                                                <td class="px-4 py-3">
+                                                    <div class="flex items-start gap-2">
+                                                        <span class="flex-shrink-0 mt-0.5 text-[10px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded uppercase tracking-wide leading-none">New</span>
+                                                        <p class="text-sm text-slate-900 dark:text-white leading-snug break-words" x-text="obs.label"></p>
+                                                    </div>
+                                                </td>
+                                                <td class="px-4 py-3">
+                                                    <textarea x-model="obs.recommendation"
+                                                        class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+                                                        rows="3" placeholder="Edit recommendation..."></textarea>
+                                                </td>
+                                                <td class="px-4 py-3 space-y-2">
+                                                    <textarea x-model="obs.note"
+                                                        class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
+                                                        rows="2" placeholder="Add text note..."></textarea>
+                                                    <p class="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                                                        <span class="material-symbols-outlined text-[13px]">info</span>
+                                                        File upload available after saving
+                                                    </p>
+                                                </td>
+                                                <td class="px-4 py-3 text-center">
+                                                    <button type="button" @click="removeNewObs(obs.id)"
+                                                        class="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                                                        <span class="material-symbols-outlined text-[18px]">delete</span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                        <!-- Empty state -->
+                                        <template x-if="newObs.length === 0 && {{ observations|length }} === 0">
+                                            <tr>
+                                                <td colspan="4" class="p-8">
+                                                    <div class="flex flex-col items-center gap-3 text-center">
+                                                        <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
+                                                            <span class="material-symbols-outlined text-slate-400 dark:text-slate-500" style="font-size:24px">rate_review</span>
+                                                        </div>
+                                                        <div>
+                                                            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No observations added yet</p>
+                                                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Click an observation above to add it to your assessment</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div><!-- end observations section -->
 
                 </div>
 
@@ -497,7 +490,7 @@
                             </div>
                             {% endif %}
                             <div>
-                                <p class="text-xs font-bold text-slate-400 uppercase mb-1.5">Domain</p>
+                                <p class="text-xs font-bold text-slate-400 uppercase mb-1.5">Category</p>
                                 <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ domain.label or
                                     domain.audit_domain_type.name }}</span>
                             </div>
@@ -583,78 +576,12 @@
 
 
 <script>
-    function addObservation(observationId, instanceId, label, recommendation) {
-        if (!observationId) return;
-
-        // Create unique ID for new observation
-        const newId = 'new_' + Date.now();
-
-        // Create a new row
-        const tbody = document.getElementById(`observations-tbody-${instanceId}`);
-
-        // Remove empty state if exists
-        const emptyRow = document.getElementById(`empty-obs-${instanceId}`);
-        if (emptyRow) {
-            emptyRow.remove();
-        }
-
-        const newRow = document.createElement('tr');
-        newRow.className = 'border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors';
-        newRow.setAttribute('data-obs-id', newId);
-        newRow.innerHTML = `
-            <td class="px-6 py-4 text-sm text-slate-900 dark:text-white break-words">${label}</td>
-            <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 break-words">${recommendation}</td>
-            <td class="px-6 py-4 text-sm" data-evidence-cell="true">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
-                    <span class="material-symbols-outlined" style="font-size:12px">attach_file</span>
-                    Save to add evidence
-                </span>
-            </td>
-            <td class="px-6 py-4 text-center">
-                <button type="button" class="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" onclick="deleteObservationRow('${newId}', '${instanceId}')">
-                    <span class="material-symbols-outlined">delete</span>
-                </button>
-            </td>
-        `;
-
-        tbody.appendChild(newRow);
-
-        // Hide the dropdown panel
-        document.getElementById(`observation-dropdown-${instanceId}`).classList.add('hidden');
-    }
-
-    function deleteObservationRow(obsId, instanceId) {
-        const row = document.querySelector(`tr[data-obs-id="${obsId}"]`);
-        if (row) {
-            row.remove();
-        }
-
-        // Show empty state if no observations
-        const tbody = document.getElementById(`observations-tbody-${instanceId}`);
-        if (tbody.querySelectorAll('tr[data-obs-id]').length === 0) {
-            const emptyRow = document.createElement('tr');
-            emptyRow.id = `empty-obs-${instanceId}`;
-            emptyRow.innerHTML = `
-                <td colspan="4" class="p-4 w-full">
-                    <div class="w-full flex flex-col items-center gap-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl py-8 text-center">
-                        <div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center">
-                            <span class="material-symbols-outlined text-slate-400 dark:text-slate-500" style="font-size:24px">rate_review</span>
-                        </div>
-                        <div>
-                            <p class="text-sm font-semibold text-slate-600 dark:text-slate-300">No observations documented yet</p>
-                            <p class="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Document your findings and recommendations by selecting an observation above.</p>
-                        </div>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(emptyRow);
-        }
-    }
-
     function prepareObservationsData() {
+        const instanceId = '{{ instance.id }}';
+        const state = window['obsState_' + instanceId];
         const form = document.getElementById('control-form');
-        // Remove any previously prepared hidden inputs
-        form.querySelectorAll('input[name^="observation_"]').forEach(input => input.remove());
+
+        form.querySelectorAll('input[name^="observation_"]').forEach(i => i.remove());
 
         const addInput = (name, value) => {
             const inp = document.createElement('input');
@@ -664,17 +591,29 @@
             form.appendChild(inp);
         };
 
-        // Collect only NEW observations (data-obs-id starts with "new_") from table DOM
         let idx = 0;
-        document.querySelectorAll('tbody[id^="observations-tbody-"] tr[data-obs-id]').forEach(row => {
+
+        // Collect recommendation updates for existing saved observations
+        document.querySelectorAll('tr[data-obs-saved="true"]').forEach(row => {
             const obsId = row.getAttribute('data-obs-id');
-            if (!obsId || !obsId.startsWith('new_')) return;
-            const cells = row.querySelectorAll('td');
-            addInput(`observation_${idx}_text`, cells[0]?.textContent?.trim() || '');
-            addInput(`observation_${idx}_recommendation`, cells[1]?.textContent?.trim() || '');
-            addInput(`observation_${idx}_is_new`, 'true');
+            if (!obsId) return;
+            const rec = row.querySelector('.obs-recommendation')?.value?.trim() || '';
+            addInput(`observation_${idx}_id`, obsId);
+            addInput(`observation_${idx}_recommendation`, rec);
+            addInput(`observation_${idx}_is_new`, 'false');
             idx++;
         });
+
+        // Collect new observations from Alpine state
+        if (state) {
+            for (const obs of state.newObs) {
+                addInput(`observation_${idx}_text`, obs.label);
+                addInput(`observation_${idx}_recommendation`, obs.recommendation);
+                if (obs.note) addInput(`observation_${idx}_note`, obs.note);
+                addInput(`observation_${idx}_is_new`, 'true');
+                idx++;
+            }
+        }
     }
 </script>
 
