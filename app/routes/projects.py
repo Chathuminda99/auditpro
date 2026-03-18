@@ -476,7 +476,7 @@ async def add_domain(
             "domain_stats": domain_stats,
             "domain_rollup": domain_rollup,
         },
-        headers=htmx_toast("Domain added successfully")
+        headers=htmx_toast("Category added successfully")
     )
 
 
@@ -529,7 +529,7 @@ async def remove_domain(
             "domain_stats": domain_stats,
             "domain_rollup": domain_rollup,
         },
-        headers=htmx_toast("Domain removed successfully")
+        headers=htmx_toast("Category removed successfully")
     )
 
 
@@ -1142,20 +1142,30 @@ async def update_control_with_observations(
     # Update the instance
     hc_repo.update_control_instance(instance_id, status, notes, user.id)
 
-    # Handle new observations
+    # Handle observation updates and new observations
     idx = 0
     while True:
-        obs_text = form_data.get(f"observation_{idx}_text")
-        if obs_text is None:
-            break
         obs_is_new = form_data.get(f"observation_{idx}_is_new")
+        if obs_is_new is None:
+            break
         if obs_is_new == "true":
+            obs_text = form_data.get(f"observation_{idx}_text", "").strip()
             obs_rec = form_data.get(f"observation_{idx}_recommendation", "").strip() or None
-            hc_repo.create_observation(instance.id, obs_text.strip(), obs_rec)
+            obs_note = form_data.get(f"observation_{idx}_note", "").strip() or None
+            if obs_text:
+                new_obs = hc_repo.create_observation(instance.id, obs_text, obs_rec)
+                if obs_note:
+                    hc_repo.add_observation_text_note(new_obs.id, obs_note)
+        elif obs_is_new == "false":
+            obs_id_str = form_data.get(f"observation_{idx}_id")
+            obs_rec = form_data.get(f"observation_{idx}_recommendation", "").strip() or None
+            if obs_id_str:
+                hc_repo.update_observation_recommendation(uuid.UUID(obs_id_str), obs_rec)
         idx += 1
 
     # Reload instance with updated observations
     instance = hc_repo.get_control_instance_with_observations(instance.id)
+    domain = hc_repo.get_domain_with_sessions(uuid.UUID(domain_id))
 
     return templates.TemplateResponse(
         "projects/health_check/_control_panel.html",
@@ -1163,6 +1173,7 @@ async def update_control_with_observations(
             "request": request,
             "user": user,
             "project": project,
+            "domain": domain,
             "session": session,
             "instance": instance,
             "observations": instance.observations,
@@ -1199,6 +1210,7 @@ async def delete_observation(
 
     # Reload instance with updated observations
     instance = hc_repo.get_control_instance_with_observations(instance.id)
+    domain = hc_repo.get_domain_with_sessions(instance.audit_domain_id)
 
     return templates.TemplateResponse(
         "projects/health_check/_control_panel.html",
@@ -1206,6 +1218,7 @@ async def delete_observation(
             "request": request,
             "user": user,
             "project": project,
+            "domain": domain,
             "session": instance.audit_session,
             "instance": instance,
             "observations": instance.observations,
