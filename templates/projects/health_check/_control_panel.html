@@ -9,8 +9,8 @@
             open: false,
             value: "{{ instance.status.value }}",
             instanceId: "{{ instance.id }}",
-            colors: {"not_started": "text-slate-500 dark:text-slate-400", "pass": "text-emerald-600 dark:text-emerald-500", "fail": "text-red-600 dark:text-red-500", "in_progress": "text-amber-600 dark:text-amber-500", "na": "text-slate-500 dark:text-slate-400"},
-            labels: {"not_started": "Not Started", "pass": "Pass", "fail": "Fail", "in_progress": "In Progress", "na": "N/A"},
+            colors: {"not_started": "text-slate-500 dark:text-slate-400", "pass": "text-emerald-600 dark:text-emerald-500", "fail": "text-red-600 dark:text-red-500", "draft": "text-amber-600 dark:text-amber-500", "na": "text-slate-500 dark:text-slate-400"},
+            labels: {"not_started": "Not Started", "pass": "Pass", "fail": "Fail", "draft": "Draft", "na": "N/A"},
             init() {
                 this.$watch("value", (v) => updateSidebarStatus(this.instanceId, v));
             }
@@ -47,15 +47,15 @@
                         </button>
                     </li>
                     <li>
-                        <button type="button" @click='value = "in_progress"; open = false'
-                            :class='value === "in_progress" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
+                        <button type="button" @click='value = "draft"; open = false'
+                            :class='value === "draft" ? "bg-primary text-white shadow-md shadow-primary/25" : "text-slate-700 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/15"'
                             class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all">
                             <span
-                                :class='value === "in_progress" ? "text-white" : "text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400"'
+                                :class='value === "draft" ? "text-white" : "text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400"'
                                 class="flex items-center justify-center w-7 h-7 rounded-full transition-colors flex-shrink-0">
-                                <span class="material-symbols-outlined text-[16px]">pending</span>
+                                <span class="material-symbols-outlined text-[16px]">edit_note</span>
                             </span>
-                            <span>In Progress</span>
+                            <span>Draft</span>
                         </button>
                     </li>
                     <li>

@@ -33,7 +33,7 @@
     {% set rollup_cfg = {
       'pass':        ('check_circle',  'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400', 'Pass'),
       'fail':        ('cancel',  'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400', 'Fail'),
-      'in_progress': ('hourglass_top', 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400', 'In Progress'),
+      'draft':       ('edit_note',     'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400', 'Draft'),
       'not_started': ('schedule',      'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300', 'Not Started'),
     } %}
     {% set cfg = rollup_cfg[rollup] %}

@@ -18,7 +18,7 @@ class ControlInstanceStatus(str, Enum):
     """Status of a control instance in a health check session."""
 
     NOT_STARTED = "not_started"
-    IN_PROGRESS = "in_progress"
+    DRAFT = "draft"
     PASS = "pass"
     FAIL = "fail"
     NA = "na"

@@ -38,12 +38,12 @@ SERVER_DRAFT_MAX_BYTES = 1_000_000
 
 
 def compute_review_scope_rollup(stats: dict) -> str:
-    """Derive a single PASS/FAIL/IN_PROGRESS/NOT_STARTED verdict from aggregated stats.
+    """Derive a single PASS/FAIL/DRAFT/NOT_STARTED verdict from aggregated stats.
 
     Rules (in priority order):
     - "fail"        — if any control instance is FAIL
-    - "pass"        — if nothing is not_started or in_progress (all resolved: pass+na)
-    - "in_progress" — if some are pass/in_progress but not all resolved
+    - "pass"        — if nothing is not_started or draft (all resolved: pass+na)
+    - "draft"       — if some are pass/draft but not all resolved
     - "not_started" — if no sessions exist or everything is not_started
     """
     if stats.get("fail", 0) > 0:
@@ -51,11 +51,11 @@ def compute_review_scope_rollup(stats: dict) -> str:
     total = sum(stats.values())
     if total == 0:
         return "not_started"
-    unresolved = stats.get("not_started", 0) + stats.get("in_progress", 0)
+    unresolved = stats.get("not_started", 0) + stats.get("draft", 0)
     if unresolved == 0:
         return "pass"
-    if stats.get("pass", 0) > 0 or stats.get("in_progress", 0) > 0:
-        return "in_progress"
+    if stats.get("pass", 0) > 0 or stats.get("draft", 0) > 0:
+        return "draft"
     return "not_started"
 
 
@@ -2137,7 +2137,7 @@ async def detail_project(
         # Project-level assessed %
         total_instances = sum(sum(stats.values()) for stats in review_scope_stats.values())
         assessed_instances = sum(
-            stats.get("pass", 0) + stats.get("fail", 0) + stats.get("na", 0) + stats.get("in_progress", 0)
+            stats.get("pass", 0) + stats.get("fail", 0) + stats.get("na", 0) + stats.get("draft", 0)
             for stats in review_scope_stats.values()
         )
         assessed_pct = round(assessed_instances / total_instances * 100) if total_instances > 0 else 0

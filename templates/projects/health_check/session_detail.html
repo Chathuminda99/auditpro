@@ -152,7 +152,7 @@
                 <span class="text-red-500">{{ icon_macro.icon('alert-circle', 'currentColor', '18') }}</span>
                 {% elif instance.status.value == 'na' %}
                 <span class="text-purple-500">{{ icon_macro.icon('help-circle', 'currentColor', '18') }}</span>
-                {% elif instance.status.value == 'in_progress' %}
+                {% elif instance.status.value == 'draft' %}
                 <span class="text-amber-500">{{ icon_macro.icon('alert-triangle', 'currentColor', '18') }}</span>
                 {% else %}
                 <svg class="inline-block" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none"
@@ -207,7 +207,7 @@
                   <span class="text-red-500">{{ icon_macro.icon('alert-circle', 'currentColor', '16') }}</span>
                   {% elif instance.status.value == 'na' %}
                   <span class="text-purple-500">{{ icon_macro.icon('help-circle', 'currentColor', '16') }}</span>
-                  {% elif instance.status.value == 'in_progress' %}
+                  {% elif instance.status.value == 'draft' %}
                   <span class="text-amber-500">{{ icon_macro.icon('alert-triangle', 'currentColor', '16') }}</span>
                   {% else %}
                   <svg class="inline-block" style="width:16px;height:16px" viewBox="0 0 24 24" fill="none"
@@ -360,7 +360,7 @@
       pass: '<span class="text-emerald-500"><svg class="inline-block" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></span>',
       fail: '<span class="text-red-500"><svg class="inline-block" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></span>',
       na: '<span class="text-purple-500"><svg class="inline-block" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg></span>',
-      in_progress: '<span class="text-amber-500"><svg class="inline-block" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></span>',
+      draft: '<span class="text-amber-500"><svg class="inline-block" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></span>',
       not_started: '<svg class="inline-block" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"></circle></svg>'
     };
     el.innerHTML = icons[status] || icons.not_started;
