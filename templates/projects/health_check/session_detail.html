@@ -350,7 +350,49 @@
       if (icon) icon.classList.remove('hidden');
       if (spinner) spinner.classList.add('hidden');
       if (label) label.innerHTML = 'Save &amp; Continue';
+
+      // After a successful save (POST), clear any persisted draft observations
+      if (evt.detail.requestConfig && evt.detail.requestConfig.verb === 'post') {
+        for (const key of Object.keys(localStorage)) {
+          if (key.startsWith('hc_pending_obs_')) localStorage.removeItem(key);
+        }
+      }
     }
+  });
+
+  // Auto-save unsaved observations when switching controls
+  document.body.addEventListener('htmx:beforeRequest', function (evt) {
+    const elt = evt.detail.elt;
+    if (!elt || !elt.classList.contains('control-link')) return;
+
+    const form = document.getElementById('control-form');
+    if (!form) return;
+
+    // Find the active control's instance ID to look up obs state
+    const activeBtn = document.querySelector('.control-link.bg-emerald-50, .control-link.text-emerald-700');
+    if (!activeBtn) return;
+
+    const instanceId = activeBtn.dataset.instanceId;
+    const obsState = window['obsState_' + instanceId];
+    if (!obsState || obsState.newObs.length === 0) return;
+
+    // Cancel the HTMX navigation
+    evt.preventDefault();
+
+    // Prepare hidden inputs for the new observations
+    if (typeof prepareObservationsData === 'function') prepareObservationsData();
+
+    const postUrl = form.getAttribute('hx-post');
+    const targetUrl = elt.getAttribute('hx-get');
+
+    fetch(postUrl, {
+      method: 'POST',
+      body: new FormData(form),
+      headers: { 'HX-Request': 'true', 'HX-Boosted': 'true' }
+    }).then(function () {
+      // Now load the clicked control
+      htmx.ajax('GET', targetUrl, { target: '#control-panel', swap: 'innerHTML' });
+    });
   });
 
   function updateSidebarStatus(instanceId, status) {

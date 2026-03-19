@@ -13,6 +13,7 @@
             labels: {"not_started": "Not Started", "pass": "Pass", "fail": "Fail", "draft": "Draft", "na": "N/A"},
             init() {
                 this.$watch("value", (v) => updateSidebarStatus(this.instanceId, v));
+                window["statusState_{{ instance.id }}"] = this;
             }
         }' @click.outside="open = false" class="relative">
             <input type="hidden" name="status" form="control-form" :value="value" />
@@ -307,6 +308,7 @@
                             activeTab: "observations",
                             availableObs: {{ obs_list | tojson | safe }},
                             newObs: [],
+                            _draftKey: "hc_pending_obs_{{ instance.id }}",
                             selectObs(obs) {
                                 this.newObs.push({
                                     id: "new_" + Date.now(),
@@ -314,12 +316,26 @@
                                     recommendation: obs.recommendation || "",
                                     note: ""
                                 });
+                                const statusState = window["statusState_{{ instance.id }}"];
+                                if (statusState && statusState.value === "not_started") {
+                                    statusState.value = "draft";
+                                }
                             },
                             removeNewObs(id) {
                                 this.newObs = this.newObs.filter(o => o.id !== id);
                             },
                             init() {
                                 window["obsState_{{ instance.id }}"] = this;
+                                try {
+                                    const saved = localStorage.getItem(this._draftKey);
+                                    if (saved) this.newObs = JSON.parse(saved);
+                                } catch(e) {}
+                                this.$watch("newObs", (v) => {
+                                    try {
+                                        if (v.length > 0) localStorage.setItem(this._draftKey, JSON.stringify(v));
+                                        else localStorage.removeItem(this._draftKey);
+                                    } catch(e) {}
+                                });
                             }
                         }' class="mt-6">
                     <!-- Tab Buttons -->
@@ -374,6 +390,15 @@
 
                             <!-- Selected Observations - Inline Expandable -->
                             <div class="space-y-3">
+                                <!-- Section label shown when there are added observations -->
+                                {% if observations %}
+                                <div class="flex items-center gap-2 pt-1 pl-3">
+                                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Added Observations</span>
+                                    <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-white text-[10px] font-bold">{{ observations|length }}</span>
+                                    <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+                                </div>
+                                {% endif %}
+
                                 <!-- Saved Observations -->
                                 {% for obs in observations %}
                                 <div x-data="{
@@ -390,15 +415,15 @@
                                         }
                                     }
                                 }"
-                                    class="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
+                                    class="border border-slate-200 dark:border-slate-700 border-l-4 border-l-primary rounded-lg overflow-hidden hover:shadow-md transition-shadow"
                                     data-obs-id="{{ obs.id }}" data-obs-saved="true">
                                     <!-- Collapsed Header -->
                                     <div @click="expanded = !expanded"
-                                        class="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        class="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
                                         <div class="flex items-start gap-3 flex-1 min-w-0">
                                             <span class="material-symbols-outlined text-primary flex-shrink-0 mt-0.5">assignment_turned_in</span>
                                             <div class="flex-1 min-w-0">
-                                                <p class="text-sm font-medium text-slate-900 dark:text-white break-words">{{ obs.observation_text }}</p>
+                                                <p class="text-sm font-semibold text-slate-900 dark:text-white break-words">{{ obs.observation_text }}</p>
                                                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">{{ obs.evidence_files|length }} evidence item{{ 's' if obs.evidence_files|length != 1 else '' }}</p>
                                             </div>
                                         </div>
@@ -512,16 +537,24 @@
                                 {% endfor %}
 
                                 <!-- New Observations (Alpine managed) -->
+                                <template x-if="newObs.length > 0">
+                                    <div class="flex items-center gap-2 pt-1 pl-3">
+                                        <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Unsaved</span>
+                                        <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold" x-text="newObs.length"></span>
+                                        <div class="flex-1 h-px bg-amber-200 dark:bg-amber-700/50"></div>
+                                    </div>
+                                </template>
                                 <template x-for="obs in newObs" :key="obs.id">
                                     <div x-data="{ expanded: true }"
-                                        class="border border-primary/30 bg-primary/5 dark:bg-primary/10 rounded-lg overflow-hidden"
+                                        class="border border-amber-300 dark:border-amber-700/50 border-l-4 border-l-amber-400 bg-amber-50 dark:bg-amber-900/10 rounded-lg overflow-hidden"
                                         :data-obs-id="obs.id">
                                         <!-- Header -->
                                         <div class="flex items-center justify-between gap-3 px-4 py-3">
                                             <div class="flex items-start gap-3 flex-1">
-                                                <span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-primary/20 text-primary uppercase tracking-wide leading-none flex-shrink-0 mt-0.5">New</span>
+                                                <span class="material-symbols-outlined text-amber-500 flex-shrink-0 mt-0.5">edit_note</span>
                                                 <div class="flex-1">
-                                                    <p class="text-sm font-medium text-slate-900 dark:text-white" x-text="obs.label"></p>
+                                                    <p class="text-sm font-semibold text-slate-900 dark:text-white" x-text="obs.label"></p>
+                                                    <p class="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 font-medium">Not yet saved — will be added on save</p>
                                                 </div>
                                             </div>
                                             <button type="button" @click="removeNewObs(obs.id)"
