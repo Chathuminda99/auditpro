@@ -7,7 +7,7 @@ from app.database import SessionLocal
 from app.logging_config import bind_log_context
 from app.models import Tenant
 
-APP_LOGGER = logging.getLogger("themis.app")
+APP_LOGGER = logging.getLogger("auditpro.app")
 
 
 class TenantMiddleware(BaseHTTPMiddleware):

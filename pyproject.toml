@@ -3,14 +3,14 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "themis"
-version = "0.5.17"
+name = "auditpro"
+version = "0.5.18"
 description = "Compliance and risk management platform"
 readme = "README.md"
 requires-python = ">=3.14"
 license = {text = "MIT"}
 authors = [
-    {name = "Themis Team", email = "team@themis.local"}
+    {name = "AuditPro Team", email = "team@auditpro.local"}
 ]
 
 dependencies = [

@@ -15,7 +15,7 @@ from app.routes import admin_users
 settings = get_settings()
 configure_logging(settings)
 
-APP_LOGGER = logging.getLogger("themis.app")
+APP_LOGGER = logging.getLogger("auditpro.app")
 
 
 @asynccontextmanager

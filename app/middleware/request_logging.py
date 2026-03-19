@@ -12,8 +12,8 @@ from starlette.requests import Request
 from app.logging_config import bind_log_context, reset_log_context
 
 
-ACCESS_LOGGER = logging.getLogger("themis.access")
-APP_LOGGER = logging.getLogger("themis.app")
+ACCESS_LOGGER = logging.getLogger("auditpro.access")
+APP_LOGGER = logging.getLogger("auditpro.app")
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):

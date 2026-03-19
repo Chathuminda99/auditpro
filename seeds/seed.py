@@ -59,7 +59,7 @@ def seed_database():
             print("✓ Created default tenant: Demo Company")
 
         # Check if admin user exists
-        admin_user = db.query(User).filter(User.email == "admin@themis.local").first()
+        admin_user = db.query(User).filter(User.email == "admin@auditpro.local").first()
 
         if admin_user:
             print("✓ Admin user already exists")
@@ -68,7 +68,7 @@ def seed_database():
             admin_user = User(
                 id=uuid.uuid4(),
                 tenant_id=tenant_id,
-                email="admin@themis.local",
+                email="admin@auditpro.local",
                 password_hash=hash_password("admin123"),
                 full_name="Administrator",
                 role=UserRole.ADMIN,
@@ -76,17 +76,17 @@ def seed_database():
             )
             db.add(admin_user)
             db.commit()
-            print("✓ Created admin user: admin@themis.local / admin123")
+            print("✓ Created admin user: admin@auditpro.local / admin123")
 
         # Check if auditor user exists
-        auditor_user = db.query(User).filter(User.email == "auditor@themis.local").first()
+        auditor_user = db.query(User).filter(User.email == "auditor@auditpro.local").first()
         if auditor_user:
             print("✓ Auditor user already exists")
         else:
             auditor_user = User(
                 id=uuid.uuid4(),
                 tenant_id=tenant_id,
-                email="auditor@themis.local",
+                email="auditor@auditpro.local",
                 password_hash=hash_password("auditor123"),
                 full_name="Test Auditor",
                 role=UserRole.AUDITOR,
@@ -94,7 +94,7 @@ def seed_database():
             )
             db.add(auditor_user)
             db.commit()
-            print("✓ Created auditor user: auditor@themis.local / auditor123")
+            print("✓ Created auditor user: auditor@auditpro.local / auditor123")
 
         # Check if clients already exist
         existing_clients = db.query(Client).filter(

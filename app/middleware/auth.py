@@ -7,7 +7,7 @@ from app.config import get_settings
 from app.logging_config import bind_log_context
 from app.services.auth_service import get_user_from_token
 
-SECURITY_LOGGER = logging.getLogger("themis.security")
+SECURITY_LOGGER = logging.getLogger("auditpro.security")
 
 
 class AuthMiddleware(BaseHTTPMiddleware):

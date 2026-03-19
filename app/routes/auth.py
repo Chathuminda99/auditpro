@@ -14,7 +14,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 from app.templates import templates
 from app.utils.htmx import htmx_toast
 settings = get_settings()
-SECURITY_LOGGER = logging.getLogger("themis.security")
+SECURITY_LOGGER = logging.getLogger("auditpro.security")
 
 
 @router.get("/login", response_class=HTMLResponse)

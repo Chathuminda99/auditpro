@@ -18,7 +18,7 @@ DEFAULT_LOG_CONTEXT = {
 }
 
 _log_context: ContextVar[dict[str, str]] = ContextVar(
-    "themis_log_context",
+    "auditpro_log_context",
     default=DEFAULT_LOG_CONTEXT.copy(),
 )
 _logging_configured = False
@@ -125,22 +125,22 @@ def configure_logging(settings) -> None:
     root_logger.addHandler(console_handler)
 
     _reset_logger(
-        "themis.app",
+        "auditpro.app",
         resolved_level,
         [console_handler, app_handler],
     )
     _reset_logger(
-        "themis.access",
+        "auditpro.access",
         logging.INFO,
         [console_handler, access_handler],
     )
     _reset_logger(
-        "themis.db",
+        "auditpro.db",
         logging.INFO,
         [db_handler],
     )
     _reset_logger(
-        "themis.security",
+        "auditpro.security",
         logging.INFO,
         [console_handler, security_handler],
     )

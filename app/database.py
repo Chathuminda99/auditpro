@@ -9,7 +9,7 @@ from app.config import get_settings
 
 
 settings = get_settings()
-DB_LOGGER = logging.getLogger("themis.db")
+DB_LOGGER = logging.getLogger("auditpro.db")
 
 
 def _compact_sql(statement: str | None) -> str:

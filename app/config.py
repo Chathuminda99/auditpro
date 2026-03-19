@@ -10,13 +10,13 @@ class Settings(BaseSettings):
     database_url: str
 
     # App
-    app_name: str = "Themis"
+    app_name: str = "AuditPro"
     debug: bool = False
     secret_key: str
 
     # Session
     session_cookie_max_age: int = 28800  # 8 hours
-    session_cookie_name: str = "themis_session"
+    session_cookie_name: str = "auditpro_session"
     session_cookie_secure: bool = False
     session_cookie_httponly: bool = True
     session_cookie_samesite: str = "Lax"
