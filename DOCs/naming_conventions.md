@@ -18,12 +18,12 @@ This document outlines the consistent naming conventions used throughout the The
 | Section | framework_sections |
 | Control | framework_controls |
 | ProjectResponse | project_responses |
-| AuditDomain | audit_domains |
-| AuditDomainType | audit_domain_types |
+| ReviewScope | review_scopes |
+| ReviewScopeType | review_scope_types |
 | AuditSession | audit_sessions |
 | SessionControlInstance | session_control_instances |
 | PciDssControl | pci_dss_controls |
-| ControlToDomainMapping | control_to_domain_mappings |
+| ControlToReviewScopeMapping | control_to_review_scope_mappings |
 | ControlInstanceEvidenceFile | control_instance_evidence_files |
 
 ---
@@ -51,9 +51,9 @@ GET     /projects                           → list_projects()
 GET     /projects/new                       → new_project_form()
 POST    /projects                           → create_project()
 GET     /projects/{project_id}              → detail_project()
-GET     /projects/{project_id}/domains/add  → add_domain_modal()
-POST    /projects/{project_id}/domains      → add_domain()
-DELETE  /projects/{project_id}/domains/{id} → remove_domain()
+GET     /projects/{project_id}/review-scopes/add  → add_review_scope_modal()
+POST    /projects/{project_id}/review-scopes      → add_review_scope()
+DELETE  /projects/{project_id}/review-scopes/{id} → remove_review_scope()
 ```
 
 ### Route Function Naming
@@ -92,9 +92,9 @@ templates/
 │   ├── _row.html
 │   └── health_check/
 │       ├── overview.html
-│       ├── domain_detail.html
+│       ├── review_scope_detail.html
 │       ├── session_detail.html
-│       ├── _domains_grid.html
+│       ├── _review_scopes_grid.html
 │       ├── _sessions_list.html
 │       ├── _add_session_modal.html
 │       └── _control_panel.html
@@ -160,8 +160,8 @@ calculate_{noun}()
 user_repo.get_by_id(user_id)
 project_repo.get_by_id_with_details(tenant_id, project_id)
 project_repo.filter_projects(tenant_id, status=None, user=user)
-hc_repo.get_domains_for_project(project_id)
-hc_repo.compute_domain_rollup(stats)
+hc_repo.get_review_scopes_for_project(project_id)
+hc_repo.compute_review_scope_rollup(stats)
 ```
 
 ---
@@ -174,21 +174,21 @@ hc_repo.compute_domain_rollup(stats)
 
 | Category | Pattern | Examples |
 |---|---|---|
-| Database IDs | `{entity}_id` | user_id, project_id, domain_id |
-| Relationships | `{entity}_s` (plural) | domains, sessions, controls |
+| Database IDs | `{entity}_id` | user_id, project_id, review_scope_id |
+| Relationships | `{entity}_s` (plural) | review_scopes, sessions, controls |
 | Counts | `{action}_count`, `total_{entity}` | total_instances, control_count |
 | Percentages | `{action}_pct` | progress_pct, assessed_pct |
-| Collections | `{entity}_dict`, `{entity}_list` | domain_stats, projects_list |
+| Collections | `{entity}_dict`, `{entity}_list` | review_scope_stats, projects_list |
 | Status | `{action}_{state}` | is_active, has_error |
 
 ### Examples
 
 ```python
-project_id, domain_id, session_id
-domains, sessions, control_instances
+project_id, review_scope_id, session_id
+review_scopes, sessions, control_instances
 total_instances, responded_count, control_count
-progress_pct, assessed_pct, domains_pass
-domain_stats (dict), projects (list), responses_dict
+progress_pct, assessed_pct, review_scopes_pass
+review_scope_stats (dict), projects (list), responses_dict
 form_data, breadcrumbs, active_filters
 ```
 
@@ -230,9 +230,9 @@ has_{property}()
 create_project(tenant_id, client_id, ...)
 get_by_id(user_id)
 get_by_id_with_details(tenant_id, project_id)
-get_domains_for_project(project_id)
+get_review_scopes_for_project(project_id)
 filter_projects(tenant_id, status=None, ...)
-compute_domain_rollup(stats)
+compute_review_scope_rollup(stats)
 can_access_project(user, project)
 ```
 
@@ -245,7 +245,7 @@ can_access_project(user, project)
 ### Naming Patterns
 
 - **Entities:** `{Noun}` → User, Project, Framework
-- **Relationships:** `{Entity1}To{Entity2}` → ProjectResponse, ControlToDomainMapping
+- **Relationships:** `{Entity1}To{Entity2}` → ProjectResponse, ControlToReviewScopeMapping
 - **Types/Enums:** `{Entity}{Type}` → ProjectStatus, UserRole
 - **Snapshots:** Fields like `control_title_snapshot` in SessionControlInstance
 
@@ -254,9 +254,9 @@ can_access_project(user, project)
 ```python
 class User
 class Project
-class AuditDomain
+class ReviewScope
 class SessionControlInstance  # Snapshot model
-class ControlToDomainMapping  # Relationship model
+class ControlToReviewScopeMapping  # Relationship model
 ```
 
 ---
@@ -270,7 +270,7 @@ class ControlToDomainMapping  # Relationship model
 | Category | Format | Examples |
 |---|---|---|
 | Primary Keys | `id` (UUID) | user.id, project.id |
-| Foreign Keys | `{entity}_id` | project_id, domain_id |
+| Foreign Keys | `{entity}_id` | project_id, review_scope_id |
 | Tenant Scoping | `tenant_id` | For multi-tenancy |
 | Ownership/Tracking | `{role}_id` | owner_id, assessed_by_id |
 
@@ -335,7 +335,7 @@ assessed_by_id: UUID  # Assessor tracking
 |---|---|---|
 | Python files | `snake_case.py` | models.py, health_check.py |
 | Directories | `snake_case/` | app/, templates/ |
-| Template files | `snake_case.html`, `_partial.html` | overview.html, _domains_grid.html |
+| Template files | `snake_case.html`, `_partial.html` | overview.html, _review_scopes_grid.html |
 | Static assets | `lowercase-with-hyphens` | output.css, icon-set.js |
 
 ### Examples
@@ -345,8 +345,8 @@ app/models/project.py
 app/repositories/health_check.py
 app/routes/projects.py
 static/css/output.css
-templates/projects/health_check/domain_detail.html
-templates/projects/health_check/_domains_grid.html
+templates/projects/health_check/review_scope_detail.html
+templates/projects/health_check/_review_scopes_grid.html
 ```
 
 ---
@@ -410,8 +410,8 @@ validate_email(email)
 | user | User | Authenticated user |
 | project | Project | Single project |
 | projects | List[Project] | Multiple projects |
-| domains | List[AuditDomain] | Audit domains |
-| domain_stats | Dict | Domain statistics |
+| domains | List[ReviewScope] | Audit domains |
+| review_scope_stats | Dict | Domain statistics |
 | breadcrumbs | List | Navigation trail |
 | active_filters | Dict | Applied filters |
 
@@ -423,8 +423,8 @@ validate_email(email)
     "user": user,
     "project": project,
     "domains": domains,
-    "domain_stats": domain_stats,
-    "domain_rollup": domain_rollup,
+    "review_scope_stats": review_scope_stats,
+    "review_scope_rollup": review_scope_rollup,
     "breadcrumbs": breadcrumbs,
 }
 ```
@@ -439,13 +439,13 @@ validate_email(email)
 
 ```
 /projects/{project_id}
-/domains/{domain_id}
+/review-scopes/{review_scope_id}
 /sessions/{session_id}
 /controls/{instance_id}
 /evidence/{evidence_id}
 ```
 
-**Never use abbreviations** — Use `project_id` not `proj_id`, `domain_id` not `dom_id`
+**Never use abbreviations** — Use `project_id` not `proj_id`, `review_scope_id` not `dom_id`
 
 ---
 
@@ -469,17 +469,17 @@ validate_email(email)
 
 | Element | Convention | Example |
 |---|---|---|
-| Database tables | `snake_case` | `audit_domains` |
-| Model classes | `PascalCase` | `AuditDomain` |
-| Functions/methods | `snake_case` | `get_domain_by_id()` |
-| Variables | `snake_case` | `project_id`, `domain_stats` |
+| Database tables | `snake_case` | `review_scopes` |
+| Model classes | `PascalCase` | `ReviewScope` |
+| Functions/methods | `snake_case` | `get_review_scope_by_id()` |
+| Variables | `snake_case` | `project_id`, `review_scope_stats` |
 | Enums (class) | `PascalCase` | `ControlInstanceStatus` |
 | Enums (values) | `UPPER_CASE` | `NOT_STARTED`, `PASS` |
 | Routes | RESTful + `lowercase` | `/projects/{project_id}` |
 | Templates | `lowercase.html` | `overview.html` |
-| Partials | `_lowercase.html` | `_domains_grid.html` |
+| Partials | `_lowercase.html` | `_review_scopes_grid.html` |
 | Files | `snake_case.py` | `health_check.py` |
-| IDs | `{entity}_id` | `project_id`, `domain_id` |
+| IDs | `{entity}_id` | `project_id`, `review_scope_id` |
 | Timestamps | `created_at`, `updated_at` | `user.created_at` |
 | Repository | `{Model}Repository` | `ProjectRepository` |
 

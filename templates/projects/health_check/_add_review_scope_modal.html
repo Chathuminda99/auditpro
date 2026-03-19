@@ -1,23 +1,23 @@
-<form hx-post="/projects/{{ project.id }}/domains" hx-target="#domains-grid" hx-swap="innerHTML" @submit="$store.modal.hide()">
+<form hx-post="/projects/{{ project.id }}/review-scopes" hx-target="#review-scopes-grid" hx-swap="innerHTML" @submit="$store.modal.hide()">
   <div class="space-y-6">
     <!-- Header -->
     <div>
-      <h2 class="text-xl font-semibold text-foreground">Add Audit Domain</h2>
-      <p class="text-sm text-muted-foreground mt-1">Select a domain to add to this health check assessment.</p>
+      <h2 class="text-xl font-semibold text-foreground">Add Review Scope</h2>
+      <p class="text-sm text-muted-foreground mt-1">Select a review scope to add to this health check assessment.</p>
     </div>
 
-    {% if unadded_domain_types %}
-    <!-- Domain Type Selection -->
+    {% if unadded_review_scope_types %}
+    <!-- Review Scope Type Selection -->
     <div class="space-y-3">
-      <label class="text-sm font-medium text-foreground">Select Domain Type <span class="text-destructive">*</span></label>
+      <label class="text-sm font-medium text-foreground">Select Review Scope Type <span class="text-destructive">*</span></label>
       <div class="space-y-2">
-        {% for domain_type in unadded_domain_types %}
+        {% for review_scope_type in unadded_review_scope_types %}
         <label class="flex items-start gap-3 p-3 rounded-lg border border-input bg-background cursor-pointer hover:bg-muted transition-colors">
-          <input type="radio" name="domain_type_id" value="{{ domain_type.id }}" required class="mt-1" />
+          <input type="radio" name="review_scope_type_id" value="{{ review_scope_type.id }}" required class="mt-1" />
           <div class="flex-1">
-            <div class="font-medium text-foreground">{{ domain_type.name }}</div>
-            {% if domain_type.description %}
-            <div class="text-xs text-muted-foreground mt-1">{{ domain_type.description }}</div>
+            <div class="font-medium text-foreground">{{ review_scope_type.name }}</div>
+            {% if review_scope_type.description %}
+            <div class="text-xs text-muted-foreground mt-1">{{ review_scope_type.description }}</div>
             {% endif %}
           </div>
         </label>
@@ -25,11 +25,11 @@
       </div>
     </div>
     {% else %}
-    <!-- All Domains Already Added -->
+    <!-- All Review Scopes Already Added -->
     <div class="py-8 text-center">
       <span class="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mx-auto block mb-3">done_all</span>
-      <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">All domains added</h3>
-      <p class="text-sm text-slate-500 dark:text-slate-400">All available domain types for this framework have been added to your health check project.</p>
+      <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">All review scopes added</h3>
+      <p class="text-sm text-slate-500 dark:text-slate-400">All available review scope types for this framework have been added to your health check project.</p>
     </div>
     {% endif %}
 
@@ -39,11 +39,11 @@
         class="inline-flex items-center justify-center gap-2 font-medium rounded-md px-4 py-2 text-sm transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none border border-input bg-background text-foreground hover:bg-muted">
         Cancel
       </button>
-      {% if unadded_domain_types %}
+      {% if unadded_review_scope_types %}
       <button type="submit"
         class="inline-flex items-center justify-center gap-2 font-medium rounded-md px-4 py-2 text-sm transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background bg-primary text-primary-foreground hover:opacity-90">
         <span class="material-symbols-outlined text-[14px]">add_circle</span>
-        Add Domain
+        Add Review Scope
       </button>
       {% endif %}
     </div>

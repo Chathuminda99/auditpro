@@ -7,6 +7,7 @@ from app.models.base import BaseModel, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.user import User
+    from app.models.health_check import ReviewScope, AuditSession
 
 
 class ProjectType(str, Enum):
@@ -75,6 +76,15 @@ class Project(BaseModel, TimestampMixin):
     )
     responses: Mapped[list["ProjectResponse"]] = relationship(
         "ProjectResponse", cascade="all, delete-orphan"
+    )
+    observations: Mapped[list["ProjectObservation"]] = relationship(
+        "ProjectObservation", cascade="all, delete-orphan"
+    )
+    review_scopes: Mapped[list["ReviewScope"]] = relationship(
+        "ReviewScope", cascade="all, delete-orphan", back_populates="project"
+    )
+    audit_sessions: Mapped[list["AuditSession"]] = relationship(
+        "AuditSession", cascade="all, delete-orphan", back_populates="project"
     )
     segments: Mapped[list["Project"]] = relationship(
         "Project",

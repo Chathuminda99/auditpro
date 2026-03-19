@@ -11,7 +11,7 @@ Themis is designed as a structured audit execution platform where a PCI DSS heal
 The system separates:
 
 * Control definition (global and reusable)
-* Audit structure (project and domain organization)
+* Audit structure (project and review scope organization)
 * Control execution (session-specific evaluation)
 
 This separation ensures scalability, audit integrity, and flexibility.
@@ -25,7 +25,7 @@ This separation ensures scalability, audit integrity, and flexibility.
 The audit is organized as a three-level hierarchy:
 
 1. Root Node (Project Level)
-2. Parent Nodes (Domain Level)
+2. Parent Nodes (Review Scope Level)
 3. Child Nodes (Session Level)
 
 ---
@@ -48,9 +48,9 @@ This node acts as the container for the entire audit.
 
 ---
 
-## 2.2 Parent Nodes (Domain Level)
+## 2.2 Parent Nodes (Review Scope Level)
 
-Parent nodes represent assessment domains.
+Parent nodes represent assessment review scopes.
 
 Examples include:
 
@@ -67,7 +67,7 @@ Key characteristics:
 * It determines which controls are relevant
 * It does NOT represent a specific asset
 
-Each parent node type is associated with a predefined set of controls through a mapping mechanism.
+Each review scope type is associated with a predefined set of controls through a mapping mechanism.
 
 ---
 
@@ -112,13 +112,13 @@ Controls are NOT directly attached to projects or assets.
 
 ---
 
-## 3.1 Control-to-Domain Mapping
+## 3.1 Control-to-Review-Scope Mapping
 
-A mapping table defines which controls apply to which domains.
+A mapping table defines which controls apply to which review scopes.
 
 Example:
 
-## Control ID      Domain
+## Control ID      Review Scope
 
 Req 6.x         Application
 Req 2.x         Server
@@ -139,7 +139,7 @@ Step 1:
 The system identifies the parent node type (e.g., Application).
 
 Step 2:
-It retrieves all controls mapped to that domain.
+It retrieves all controls mapped to that review scope.
 
 Step 3:
 Instead of referencing controls dynamically, the system creates a snapshot of these controls in a session-specific table.
@@ -175,7 +175,7 @@ Fields include:
 The workflow is as follows:
 
 1. User creates a Project (Root Node)
-2. User adds a Parent Node (selects domain type)
+2. User adds a Parent Node (selects review scope type)
 3. User creates Child Nodes (sessions for specific assets)
 4. System loads controls based on parent node type
 5. System creates session_control_instances (snapshot)
@@ -196,8 +196,8 @@ The workflow is as follows:
 
 2. Many-to-Many Relationship
 
-   * A control can apply to multiple domains
-   * A domain can have multiple controls
+   * A control can apply to multiple review scopes
+   * A review scope can have multiple controls
    * A session contains multiple control instances
 
 3. Snapshot-Based Execution
@@ -207,7 +207,7 @@ The workflow is as follows:
 
 4. Context-Aware Evaluation
 
-   * Controls are filtered based on domain
+   * Controls are filtered based on review scope
    * Ensures relevance and reduces noise
 
 5. Audit Integrity
@@ -237,9 +237,8 @@ The workflow is as follows:
 * Multi-framework support
 * Role-based access (Assessor, Reviewer, Manager)
 * Automated evidence collection integrations
-* Reporting engine (per control, per domain, per project)
+* Reporting engine (per control, per review scope, per project)
 
 ---
 
 ## END OF DOCUMENT
-

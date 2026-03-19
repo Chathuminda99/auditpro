@@ -16,7 +16,7 @@
   </div>
 
   <!-- Text Note Tab -->
-  <form x-show="tab === 'text_note'" hx-post="/projects/{{ project.id }}/domains/{{ session.audit_domain.id }}/sessions/{{ session.id }}/evidence?instance_id={{ instance.id }}"
+  <form x-show="tab === 'text_note'" hx-post="/projects/{{ project.id }}/review-scopes/{{ session.review_scope.id }}/sessions/{{ session.id }}/evidence?instance_id={{ instance.id }}"
     hx-target="#evidence-list-{{ instance.id }}" hx-swap="innerHTML"
     @submit="$store.modal.hide()"
     class="space-y-4">
@@ -42,7 +42,7 @@
   </form>
 
   <!-- File Upload Tab -->
-  <form x-show="tab === 'file'" hx-post="/projects/{{ project.id }}/domains/{{ session.audit_domain.id }}/sessions/{{ session.id }}/evidence?instance_id={{ instance.id }}"
+  <form x-show="tab === 'file'" hx-post="/projects/{{ project.id }}/review-scopes/{{ session.review_scope.id }}/sessions/{{ session.id }}/evidence?instance_id={{ instance.id }}"
     hx-target="#evidence-list-{{ instance.id }}" hx-swap="innerHTML"
     hx-encoding="multipart/form-data"
     @submit="$store.modal.hide()"

@@ -1,7 +1,7 @@
 {
   "framework_name": "PCI DSS",
   "framework_version": "v4.0.1",
-  "domains": [
+  "review_scopes": [
     {
       "name": "Application",
       "sort_order": 1,

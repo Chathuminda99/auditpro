@@ -24,13 +24,13 @@ class ControlInstanceStatus(str, Enum):
     NA = "na"
 
 
-class AuditDomainType(BaseModel, TimestampMixin):
-    """Global domain template for health checks, scoped to a framework.
+class ReviewScopeType(BaseModel, TimestampMixin):
+    """Global review scope template for health checks, scoped to a framework.
 
     Example: "Application", "Database", "Network Devices" for PCI DSS.
     """
 
-    __tablename__ = "audit_domain_types"
+    __tablename__ = "review_scope_types"
 
     framework_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("frameworks.id"), nullable=False
@@ -40,24 +40,24 @@ class AuditDomainType(BaseModel, TimestampMixin):
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships
-    control_mappings: Mapped[list["ControlToDomainMapping"]] = relationship(
-        back_populates="audit_domain_type", cascade="all, delete-orphan"
+    control_mappings: Mapped[list["ControlToReviewScopeMapping"]] = relationship(
+        back_populates="review_scope_type", cascade="all, delete-orphan"
     )
-    audit_domains: Mapped[list["AuditDomain"]] = relationship(
-        back_populates="audit_domain_type", cascade="all, delete-orphan"
+    review_scopes: Mapped[list["ReviewScope"]] = relationship(
+        back_populates="review_scope_type", cascade="all, delete-orphan"
     )
 
 
-class ControlToDomainMapping(BaseModel, TimestampMixin):
-    """Many-to-many mapping: which controls apply to which audit domains.
+class ControlToReviewScopeMapping(BaseModel, TimestampMixin):
+    """Many-to-many mapping: which controls apply to which review scopes.
 
     Example: Req 2.2.1 applies to "Application", "Database", and "Network Devices".
     """
 
-    __tablename__ = "control_to_domain_mappings"
+    __tablename__ = "control_to_review_scope_mappings"
 
-    audit_domain_type_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("audit_domain_types.id"), nullable=False
+    review_scope_type_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("review_scope_types.id"), nullable=False
     )
     framework_control_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("framework_controls.id"), nullable=False
@@ -65,57 +65,57 @@ class ControlToDomainMapping(BaseModel, TimestampMixin):
 
     __table_args__ = (
         UniqueConstraint(
-            "audit_domain_type_id",
+            "review_scope_type_id",
             "framework_control_id",
-            name="uq_domain_control_mapping",
+            name="uq_review_scope_mapping",
         ),
     )
 
     # Relationships
-    audit_domain_type: Mapped["AuditDomainType"] = relationship(
+    review_scope_type: Mapped["ReviewScopeType"] = relationship(
         back_populates="control_mappings"
     )
     framework_control: Mapped["FrameworkControl"] = relationship()
 
 
-class AuditDomain(BaseModel, TimestampMixin):
-    """A domain added to a specific health-check project.
+class ReviewScope(BaseModel, TimestampMixin):
+    """A review scope added to a specific health-check project.
 
-    Parent node in the hierarchy: Project → AuditDomain → AuditSession → SessionControlInstance.
+    Parent node in the hierarchy: Project → ReviewScope → AuditSession → SessionControlInstance.
     """
 
-    __tablename__ = "audit_domains"
+    __tablename__ = "review_scopes"
 
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id"), nullable=False
     )
-    audit_domain_type_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("audit_domain_types.id"), nullable=False
+    review_scope_type_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("review_scope_types.id"), nullable=False
     )
     label: Mapped[str | None] = mapped_column(String(255), nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationships
-    project: Mapped["Project"] = relationship()
-    audit_domain_type: Mapped["AuditDomainType"] = relationship(
-        back_populates="audit_domains"
+    project: Mapped["Project"] = relationship(back_populates="review_scopes")
+    review_scope_type: Mapped["ReviewScopeType"] = relationship(
+        back_populates="review_scopes"
     )
     sessions: Mapped[list["AuditSession"]] = relationship(
-        back_populates="audit_domain", cascade="all, delete-orphan"
+        back_populates="review_scope", cascade="all, delete-orphan"
     )
 
 
 class AuditSession(BaseModel, TimestampMixin):
-    """A specific asset/instance under an audit domain.
+    """A specific asset or instance under a review scope.
 
-    Child node: AuditDomain → AuditSession → SessionControlInstance.
+    Child node: ReviewScope → AuditSession → SessionControlInstance.
     Example: "ABC Application" or "10.0.0.1 — Web Server".
     """
 
     __tablename__ = "audit_sessions"
 
-    audit_domain_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("audit_domains.id"), nullable=False
+    review_scope_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("review_scopes.id"), nullable=False
     )
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id"), nullable=False
@@ -125,8 +125,8 @@ class AuditSession(BaseModel, TimestampMixin):
     description: Mapped[str] = mapped_column(Text, nullable=True)
 
     # Relationships
-    audit_domain: Mapped["AuditDomain"] = relationship(back_populates="sessions")
-    project: Mapped["Project"] = relationship()
+    review_scope: Mapped["ReviewScope"] = relationship(back_populates="sessions")
+    project: Mapped["Project"] = relationship(back_populates="audit_sessions")
     control_instances: Mapped[list["SessionControlInstance"]] = relationship(
         back_populates="audit_session", cascade="all, delete-orphan"
     )

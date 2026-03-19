@@ -32,7 +32,7 @@ from app.templates import templates
 from app.utils.htmx import htmx_toast
 
 
-def compute_domain_rollup(stats: dict) -> str:
+def compute_review_scope_rollup(stats: dict) -> str:
     """Derive a single PASS/FAIL/IN_PROGRESS/NOT_STARTED verdict from aggregated stats.
 
     Rules (in priority order):
@@ -200,12 +200,12 @@ async def create_project(request: Request, db: Session = Depends(get_db)):
     # Refresh to get related objects
     db.refresh(project, ["client", "framework"])
 
-    # Auto-add domains for PCI DSS Health Check projects
+    # Auto-add review scopes for PCI DSS Health Check projects
     if project_type == ProjectType.PCI_DSS_HEALTH_CHECK:
         hc_repo = HealthCheckRepository(db)
-        domain_types = hc_repo.get_domain_types_for_framework(project.framework_id)
-        for i, domain_type in enumerate(domain_types):
-            hc_repo.add_domain_to_project(project.id, domain_type.id, sort_order=i)
+        review_scope_types = hc_repo.get_review_scope_types_for_framework(project.framework_id)
+        for i, review_scope_type in enumerate(review_scope_types):
+            hc_repo.add_review_scope_to_project(project.id, review_scope_type.id, sort_order=i)
 
     # Redirect isn't natively caught by HTMX headers, so we set a cookie or
     # use hx-redirect instead, but since we're using RedirectResponse it will be a 200 via HTMX's transparent redirect.
@@ -401,11 +401,11 @@ async def delete_segment(
     return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
 
-@router.get("/{project_id}/domains/add", response_class=HTMLResponse)
-async def add_domain_modal(
+@router.get("/{project_id}/review-scopes/add", response_class=HTMLResponse)
+async def add_review_scope_modal(
     project_id: str, request: Request, db: Session = Depends(get_db)
 ):
-    """Get add domain modal content."""
+    """Get the add-review-scope modal content."""
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
@@ -417,30 +417,30 @@ async def add_domain_modal(
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    unadded_domain_types = hc_repo.get_unadded_domain_types(project.id, project.framework_id)
+    unadded_review_scope_types = hc_repo.get_unadded_review_scope_types(project.id, project.framework_id)
 
     return templates.TemplateResponse(
-        "projects/health_check/_add_domain_modal.html",
+        "projects/health_check/_add_review_scope_modal.html",
         {
             "request": request,
             "user": user,
             "project": project,
-            "unadded_domain_types": unadded_domain_types,
+            "unadded_review_scope_types": unadded_review_scope_types,
         },
     )
 
 
-@router.post("/{project_id}/domains", response_class=HTMLResponse)
-async def add_domain(
+@router.post("/{project_id}/review-scopes", response_class=HTMLResponse)
+async def add_review_scope(
     project_id: str, request: Request, db: Session = Depends(get_db)
 ):
-    """Add a domain to a health check project."""
+    """Add a review scope to a health check project."""
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
 
     form_data = await request.form()
-    domain_type_id = (form_data.get("domain_type_id") or "").strip()
+    review_scope_type_id = (form_data.get("review_scope_type_id") or "").strip()
 
     repo = ProjectRepository(db)
     project = repo.get_by_id_with_details(user.tenant_id, project_id)
@@ -449,42 +449,42 @@ async def add_domain(
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    hc_repo.add_domain_to_project(project.id, domain_type_id)
+    hc_repo.add_review_scope_to_project(project.id, review_scope_type_id)
 
-    # Re-render the domains grid
-    domains = hc_repo.get_domains_for_project(project.id)
+    # Re-render the review-scope grid
+    review_scopes = hc_repo.get_review_scopes_for_project(project.id)
 
-    # Compute domain stats
-    domain_stats = {}
-    for domain in domains:
+    # Compute review-scope stats
+    review_scope_stats = {}
+    for review_scope in review_scopes:
         stats = {s.value: 0 for s in ControlInstanceStatus}
-        for session in domain.sessions:
+        for session in review_scope.sessions:
             for inst in session.control_instances:
                 stats[inst.status.value] = stats.get(inst.status.value, 0) + 1
-        domain_stats[str(domain.id)] = stats
+        review_scope_stats[str(review_scope.id)] = stats
 
-    # Domain rollup
-    domain_rollup = {str(d.id): compute_domain_rollup(domain_stats[str(d.id)]) for d in domains}
+    # Review-scope rollup
+    review_scope_rollup = {str(d.id): compute_review_scope_rollup(review_scope_stats[str(d.id)]) for d in review_scopes}
 
     return templates.TemplateResponse(
-        "projects/health_check/_domains_grid.html",
+        "projects/health_check/_review_scopes_grid.html",
         {
             "request": request,
             "user": user,
             "project": project,
-            "domains": domains,
-            "domain_stats": domain_stats,
-            "domain_rollup": domain_rollup,
+            "review_scopes": review_scopes,
+            "review_scope_stats": review_scope_stats,
+            "review_scope_rollup": review_scope_rollup,
         },
-        headers=htmx_toast("Category added successfully")
+        headers=htmx_toast("Review scope added successfully")
     )
 
 
-@router.delete("/{project_id}/domains/{domain_id}", response_class=HTMLResponse)
-async def remove_domain(
-    project_id: str, domain_id: str, request: Request, db: Session = Depends(get_db)
+@router.delete("/{project_id}/review-scopes/{review_scope_id}", response_class=HTMLResponse)
+async def remove_review_scope(
+    project_id: str, review_scope_id: str, request: Request, db: Session = Depends(get_db)
 ):
-    """Remove a domain from a health check project."""
+    """Remove a review scope from a health check project."""
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
@@ -496,40 +496,40 @@ async def remove_domain(
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    domain = hc_repo.get_domain_by_id(domain_id)
+    review_scope = hc_repo.get_review_scope_by_id(review_scope_id)
 
-    # Security check: verify the domain belongs to this project
-    if not domain or domain.project_id != project.id:
+    # Security check: verify the review scope belongs to this project
+    if not review_scope or review_scope.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
-    hc_repo.remove_domain(domain_id)
+    hc_repo.remove_review_scope(review_scope_id)
 
-    # Re-render the domains grid
-    domains = hc_repo.get_domains_for_project(project.id)
+    # Re-render the review-scope grid
+    review_scopes = hc_repo.get_review_scopes_for_project(project.id)
 
-    # Compute domain stats
-    domain_stats = {}
-    for domain in domains:
+    # Compute review-scope stats
+    review_scope_stats = {}
+    for review_scope in review_scopes:
         stats = {s.value: 0 for s in ControlInstanceStatus}
-        for session in domain.sessions:
+        for session in review_scope.sessions:
             for inst in session.control_instances:
                 stats[inst.status.value] = stats.get(inst.status.value, 0) + 1
-        domain_stats[str(domain.id)] = stats
+        review_scope_stats[str(review_scope.id)] = stats
 
-    # Domain rollup
-    domain_rollup = {str(d.id): compute_domain_rollup(domain_stats[str(d.id)]) for d in domains}
+    # Review-scope rollup
+    review_scope_rollup = {str(d.id): compute_review_scope_rollup(review_scope_stats[str(d.id)]) for d in review_scopes}
 
     return templates.TemplateResponse(
-        "projects/health_check/_domains_grid.html",
+        "projects/health_check/_review_scopes_grid.html",
         {
             "request": request,
             "user": user,
             "project": project,
-            "domains": domains,
-            "domain_stats": domain_stats,
-            "domain_rollup": domain_rollup,
+            "review_scopes": review_scopes,
+            "review_scope_stats": review_scope_stats,
+            "review_scope_rollup": review_scope_rollup,
         },
-        headers=htmx_toast("Category removed successfully")
+        headers=htmx_toast("Review scope removed successfully")
     )
 
 
@@ -571,11 +571,11 @@ async def download_evidence(
     )
 
 
-@router.get("/{project_id}/domains/{domain_id}", response_class=HTMLResponse)
-async def domain_detail(
-    project_id: str, domain_id: str, request: Request, db: Session = Depends(get_db)
+@router.get("/{project_id}/review-scopes/{review_scope_id}", response_class=HTMLResponse)
+async def review_scope_detail(
+    project_id: str, review_scope_id: str, request: Request, db: Session = Depends(get_db)
 ):
-    """Show domain detail page with sessions list."""
+    """Show the review-scope detail page with its sessions."""
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
@@ -587,36 +587,36 @@ async def domain_detail(
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    domain = hc_repo.get_domain_with_sessions(uuid.UUID(domain_id))
+    review_scope = hc_repo.get_review_scope_with_sessions(uuid.UUID(review_scope_id))
 
-    if not domain or domain.project_id != project.id:
+    if not review_scope or review_scope.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     # Compute per-session stats
     session_stats = {}
-    for session in domain.sessions:
+    for session in review_scope.sessions:
         session_stats[str(session.id)] = hc_repo.get_session_stats(session.id)
 
-    # Aggregate domain stats for rollup
+    # Aggregate review-scope stats for the rollup
     aggregate_stats = {s.value: 0 for s in ControlInstanceStatus}
     for sess_stats in session_stats.values():
         for k, v in sess_stats.items():
             aggregate_stats[k] = aggregate_stats.get(k, 0) + v
-    rollup_status = compute_domain_rollup(aggregate_stats)
+    rollup_status = compute_review_scope_rollup(aggregate_stats)
 
     breadcrumbs = [
         {"label": "Projects", "url": "/projects"},
         {"label": project.name, "url": f"/projects/{project.id}"},
-        {"label": domain.label or domain.audit_domain_type.name, "url": None},
+        {"label": review_scope.label or review_scope.review_scope_type.name, "url": None},
     ]
 
     return templates.TemplateResponse(
-        "projects/health_check/domain_detail.html",
+        "projects/health_check/review_scope_detail.html",
         {
             "request": request,
             "user": user,
             "project": project,
-            "domain": domain,
+            "review_scope": review_scope,
             "session_stats": session_stats,
             "rollup_status": rollup_status,
             "breadcrumbs": breadcrumbs,
@@ -624,9 +624,9 @@ async def domain_detail(
     )
 
 
-@router.get("/{project_id}/domains/{domain_id}/sessions/new", response_class=HTMLResponse)
+@router.get("/{project_id}/review-scopes/{review_scope_id}/sessions/new", response_class=HTMLResponse)
 async def add_session_modal(
-    project_id: str, domain_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Get add session modal content."""
     user = getattr(request.state, "user", None)
@@ -640,9 +640,9 @@ async def add_session_modal(
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    domain = hc_repo.get_domain_by_id(uuid.UUID(domain_id))
+    review_scope = hc_repo.get_review_scope_by_id(uuid.UUID(review_scope_id))
 
-    if not domain or domain.project_id != project.id:
+    if not review_scope or review_scope.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     return templates.TemplateResponse(
@@ -651,16 +651,16 @@ async def add_session_modal(
             "request": request,
             "user": user,
             "project": project,
-            "domain": domain,
+            "review_scope": review_scope,
         },
     )
 
 
-@router.post("/{project_id}/domains/{domain_id}/sessions", response_class=HTMLResponse)
+@router.post("/{project_id}/review-scopes/{review_scope_id}/sessions", response_class=HTMLResponse)
 async def create_session(
-    project_id: str, domain_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, request: Request, db: Session = Depends(get_db)
 ):
-    """Create a new session under a domain."""
+    """Create a new session under a review scope."""
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
@@ -672,36 +672,36 @@ async def create_session(
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    domain = hc_repo.get_domain_by_id(uuid.UUID(domain_id))
+    review_scope = hc_repo.get_review_scope_by_id(uuid.UUID(review_scope_id))
 
-    if not domain or domain.project_id != project.id:
+    if not review_scope or review_scope.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     form_data = await request.form()
     name = (form_data.get("name") or "").strip()
 
     if not name:
-        return RedirectResponse(url=f"/projects/{project_id}/domains/{domain_id}", status_code=302)
+        return RedirectResponse(url=f"/projects/{project_id}/review-scopes/{review_scope_id}", status_code=302)
 
     asset_identifier = form_data.get("asset_identifier", "").strip() or None
     description = form_data.get("description", "").strip() or None
 
     # Create session
     session = hc_repo.create_session(
-        domain_id=uuid.UUID(domain_id),
+        review_scope_id=uuid.UUID(review_scope_id),
         project_id=uuid.UUID(project_id),
         name=name,
         asset_identifier=asset_identifier,
         description=description,
     )
 
-    # Seed control instances for this domain's type
-    control_count = hc_repo.seed_control_instances(session, domain.audit_domain_type_id)
+    # Seed control instances for this review scope's type
+    control_count = hc_repo.seed_control_instances(session, review_scope.review_scope_type_id)
 
-    # Reload domain and compute stats
-    domain = hc_repo.get_domain_with_sessions(uuid.UUID(domain_id))
+    # Reload the review scope and compute stats
+    review_scope = hc_repo.get_review_scope_with_sessions(uuid.UUID(review_scope_id))
     session_stats = {}
-    for s in domain.sessions:
+    for s in review_scope.sessions:
         session_stats[str(s.id)] = hc_repo.get_session_stats(s.id)
 
     response = templates.TemplateResponse(
@@ -710,20 +710,20 @@ async def create_session(
             "request": request,
             "user": user,
             "project": project,
-            "domain": domain,
+            "review_scope": review_scope,
             "session_stats": session_stats,
         },
     )
-    response.headers["HX-Redirect"] = f"/projects/{project_id}/domains/{domain_id}/sessions/{session.id}"
+    response.headers["HX-Redirect"] = f"/projects/{project_id}/review-scopes/{review_scope_id}/sessions/{session.id}"
     response.headers.update(htmx_toast(f"Session created with {control_count} controls"))
     return response
 
 
-@router.delete("/{project_id}/domains/{domain_id}/sessions/{session_id}", response_class=HTMLResponse)
+@router.delete("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}", response_class=HTMLResponse)
 async def delete_session(
-    project_id: str, domain_id: str, session_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, request: Request, db: Session = Depends(get_db)
 ):
-    """Delete a session from a domain."""
+    """Delete a session from a review scope."""
     user = getattr(request.state, "user", None)
     if not user:
         return RedirectResponse(url="/auth/login", status_code=302)
@@ -735,22 +735,22 @@ async def delete_session(
         return RedirectResponse(url="/projects", status_code=302)
 
     hc_repo = HealthCheckRepository(db)
-    domain = hc_repo.get_domain_by_id(uuid.UUID(domain_id))
+    review_scope = hc_repo.get_review_scope_by_id(uuid.UUID(review_scope_id))
 
-    if not domain or domain.project_id != project.id:
+    if not review_scope or review_scope.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
-    # Verify session belongs to this domain
+    # Verify session belongs to this review scope
     session = hc_repo.get_session_by_id(uuid.UUID(session_id))
-    if not session or session.audit_domain_id != domain.id:
-        return RedirectResponse(url=f"/projects/{project_id}/domains/{domain_id}", status_code=302)
+    if not session or session.review_scope_id != review_scope.id:
+        return RedirectResponse(url=f"/projects/{project_id}/review-scopes/{review_scope_id}", status_code=302)
 
     hc_repo.delete_session(uuid.UUID(session_id))
 
-    # Reload domain and compute stats
-    domain = hc_repo.get_domain_with_sessions(uuid.UUID(domain_id))
+    # Reload the review scope and compute stats
+    review_scope = hc_repo.get_review_scope_with_sessions(uuid.UUID(review_scope_id))
     session_stats = {}
-    for s in domain.sessions:
+    for s in review_scope.sessions:
         session_stats[str(s.id)] = hc_repo.get_session_stats(s.id)
 
     return templates.TemplateResponse(
@@ -759,16 +759,16 @@ async def delete_session(
             "request": request,
             "user": user,
             "project": project,
-            "domain": domain,
+            "review_scope": review_scope,
             "session_stats": session_stats,
         },
         headers=htmx_toast("Session deleted"),
     )
 
 
-@router.get("/{project_id}/domains/{domain_id}/sessions/{session_id}", response_class=HTMLResponse)
+@router.get("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}", response_class=HTMLResponse)
 async def session_detail(
-    project_id: str, domain_id: str, session_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Show session detail page with two-panel control assessment."""
     user = getattr(request.state, "user", None)
@@ -784,13 +784,13 @@ async def session_detail(
     hc_repo = HealthCheckRepository(db)
     session = hc_repo.get_session_by_id(uuid.UUID(session_id))
 
-    if not session or session.audit_domain.project_id != project.id:
+    if not session or session.review_scope.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
-    domain = session.audit_domain
+    review_scope = session.review_scope
 
-    # Verify domain belongs to this project
-    if str(domain.id) != domain_id or domain.project_id != project.id:
+    # Verify review scope belongs to this project
+    if str(review_scope.id) != review_scope_id or review_scope.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     # Load control instances
@@ -802,7 +802,7 @@ async def session_detail(
     breadcrumbs = [
         {"label": "Projects", "url": "/projects"},
         {"label": project.name, "url": f"/projects/{project.id}"},
-        {"label": domain.label or domain.audit_domain_type.name, "url": f"/projects/{project_id}/domains/{domain_id}"},
+        {"label": review_scope.label or review_scope.review_scope_type.name, "url": f"/projects/{project_id}/review-scopes/{review_scope_id}"},
         {"label": session.name, "url": None},
     ]
 
@@ -812,7 +812,7 @@ async def session_detail(
             "request": request,
             "user": user,
             "project": project,
-            "domain": domain,
+            "review_scope": review_scope,
             "session": session,
             "control_instances": control_instances,
             "stats": stats,
@@ -821,9 +821,9 @@ async def session_detail(
     )
 
 
-@router.get("/{project_id}/domains/{domain_id}/sessions/{session_id}/controls/{instance_id}/panel", response_class=HTMLResponse)
+@router.get("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/controls/{instance_id}/panel", response_class=HTMLResponse)
 async def get_control_panel(
-    project_id: str, domain_id: str, session_id: str, instance_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, instance_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Get control assessment panel for a specific control instance."""
     user = getattr(request.state, "user", None)
@@ -843,9 +843,9 @@ async def get_control_panel(
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     session = instance.audit_session
-    domain = session.audit_domain
+    review_scope = session.review_scope
 
-    if str(session.id) != session_id or str(session.audit_domain_id) != domain_id:
+    if str(session.id) != session_id or str(session.review_scope_id) != review_scope_id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     return templates.TemplateResponse(
@@ -854,7 +854,7 @@ async def get_control_panel(
             "request": request,
             "user": user,
             "project": project,
-            "domain": domain,
+            "review_scope": review_scope,
             "session": session,
             "instance": instance,
             "observations": instance.observations,
@@ -862,9 +862,9 @@ async def get_control_panel(
     )
 
 
-@router.post("/{project_id}/domains/{domain_id}/sessions/{session_id}/controls/{instance_id}", response_class=HTMLResponse)
+@router.post("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/controls/{instance_id}", response_class=HTMLResponse)
 async def update_control(
-    project_id: str, domain_id: str, session_id: str, instance_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, instance_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Update control instance status and notes."""
     user = getattr(request.state, "user", None)
@@ -902,7 +902,7 @@ async def update_control(
     instance = hc_repo.get_control_instance_with_observations(uuid.UUID(instance_id))
 
     session = instance.audit_session
-    domain = session.audit_domain
+    review_scope = session.review_scope
 
     return templates.TemplateResponse(
         "projects/health_check/_control_panel.html",
@@ -910,7 +910,7 @@ async def update_control(
             "request": request,
             "user": user,
             "project": project,
-            "domain": domain,
+            "review_scope": review_scope,
             "session": session,
             "instance": instance,
             "observations": instance.observations,
@@ -919,10 +919,10 @@ async def update_control(
     )
 
 
-@router.get("/{project_id}/domains/{domain_id}/sessions/{session_id}/evidence/new", response_class=HTMLResponse)
+@router.get("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/evidence/new", response_class=HTMLResponse)
 async def add_evidence_modal(
     project_id: str,
-    domain_id: str,
+    review_scope_id: str,
     session_id: str,
     request: Request,
     db: Session = Depends(get_db),
@@ -943,7 +943,7 @@ async def add_evidence_modal(
     hc_repo = HealthCheckRepository(db)
     session = hc_repo.get_session_by_id(uuid.UUID(session_id))
 
-    if not session or session.audit_domain.project_id != project.id:
+    if not session or session.review_scope.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     instance = None
@@ -967,10 +967,10 @@ async def add_evidence_modal(
     )
 
 
-@router.post("/{project_id}/domains/{domain_id}/sessions/{session_id}/evidence", response_class=HTMLResponse)
+@router.post("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/evidence", response_class=HTMLResponse)
 async def create_evidence(
     project_id: str,
-    domain_id: str,
+    review_scope_id: str,
     session_id: str,
     request: Request,
     db: Session = Depends(get_db),
@@ -990,7 +990,7 @@ async def create_evidence(
     hc_repo = HealthCheckRepository(db)
     session = hc_repo.get_session_by_id(uuid.UUID(session_id))
 
-    if not session or session.audit_domain.project_id != project.id:
+    if not session or session.review_scope.project_id != project.id:
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     if not instance_id:
@@ -1052,9 +1052,9 @@ async def create_evidence(
     )
 
 
-@router.delete("/{project_id}/domains/{domain_id}/sessions/{session_id}/evidence/{evidence_id}", response_class=HTMLResponse)
+@router.delete("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/evidence/{evidence_id}", response_class=HTMLResponse)
 async def delete_evidence(
-    project_id: str, domain_id: str, session_id: str, evidence_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, evidence_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Delete an evidence item."""
     user = getattr(request.state, "user", None)
@@ -1104,9 +1104,9 @@ async def delete_evidence(
 
 # ===== Observation Routes =====
 
-@router.post("/{project_id}/domains/{domain_id}/sessions/{session_id}/controls/{instance_id}/details", response_class=HTMLResponse)
+@router.post("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/controls/{instance_id}/details", response_class=HTMLResponse)
 async def update_control_with_observations(
-    project_id: str, domain_id: str, session_id: str, instance_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, instance_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Update control instance status, notes, and handle observations."""
     user = getattr(request.state, "user", None)
@@ -1165,7 +1165,7 @@ async def update_control_with_observations(
 
     # Reload instance with updated observations
     instance = hc_repo.get_control_instance_with_observations(instance.id)
-    domain = hc_repo.get_domain_with_sessions(uuid.UUID(domain_id))
+    review_scope = hc_repo.get_review_scope_with_sessions(uuid.UUID(review_scope_id))
 
     return templates.TemplateResponse(
         "projects/health_check/_control_panel.html",
@@ -1173,7 +1173,7 @@ async def update_control_with_observations(
             "request": request,
             "user": user,
             "project": project,
-            "domain": domain,
+            "review_scope": review_scope,
             "session": session,
             "instance": instance,
             "observations": instance.observations,
@@ -1182,9 +1182,9 @@ async def update_control_with_observations(
     )
 
 
-@router.delete("/{project_id}/domains/{domain_id}/sessions/{session_id}/observations/{obs_id}", response_class=HTMLResponse)
+@router.delete("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/observations/{obs_id}", response_class=HTMLResponse)
 async def delete_observation(
-    project_id: str, domain_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Delete an observation."""
     user = getattr(request.state, "user", None)
@@ -1210,7 +1210,7 @@ async def delete_observation(
 
     # Reload instance with updated observations
     instance = hc_repo.get_control_instance_with_observations(instance.id)
-    domain = hc_repo.get_domain_with_sessions(instance.audit_session.audit_domain_id)
+    review_scope = hc_repo.get_review_scope_with_sessions(instance.audit_session.review_scope_id)
 
     return templates.TemplateResponse(
         "projects/health_check/_control_panel.html",
@@ -1218,7 +1218,7 @@ async def delete_observation(
             "request": request,
             "user": user,
             "project": project,
-            "domain": domain,
+            "review_scope": review_scope,
             "session": instance.audit_session,
             "instance": instance,
             "observations": instance.observations,
@@ -1227,9 +1227,9 @@ async def delete_observation(
     )
 
 
-@router.get("/{project_id}/domains/{domain_id}/sessions/{session_id}/observations/{obs_id}/evidence", response_class=HTMLResponse)
+@router.get("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/observations/{obs_id}/evidence", response_class=HTMLResponse)
 async def get_observation_evidence(
-    project_id: str, domain_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Get observation evidence panel."""
     user = getattr(request.state, "user", None)
@@ -1262,9 +1262,9 @@ async def get_observation_evidence(
     )
 
 
-@router.post("/{project_id}/domains/{domain_id}/sessions/{session_id}/observations/{obs_id}/evidence/text", response_class=HTMLResponse)
+@router.post("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/observations/{obs_id}/evidence/text", response_class=HTMLResponse)
 async def add_observation_text_evidence(
-    project_id: str, domain_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Add text evidence to an observation."""
     user = getattr(request.state, "user", None)
@@ -1308,9 +1308,9 @@ async def add_observation_text_evidence(
     )
 
 
-@router.post("/{project_id}/domains/{domain_id}/sessions/{session_id}/observations/{obs_id}/evidence/image", response_class=HTMLResponse)
+@router.post("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/observations/{obs_id}/evidence/image", response_class=HTMLResponse)
 async def add_observation_image_evidence(
-    project_id: str, domain_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, obs_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Add image evidence to an observation."""
     user = getattr(request.state, "user", None)
@@ -1376,9 +1376,9 @@ async def add_observation_image_evidence(
     )
 
 
-@router.delete("/{project_id}/domains/{domain_id}/sessions/{session_id}/observations/{obs_id}/evidence/{ev_id}", response_class=HTMLResponse)
+@router.delete("/{project_id}/review-scopes/{review_scope_id}/sessions/{session_id}/observations/{obs_id}/evidence/{ev_id}", response_class=HTMLResponse)
 async def delete_observation_evidence(
-    project_id: str, domain_id: str, session_id: str, obs_id: str, ev_id: str, request: Request, db: Session = Depends(get_db)
+    project_id: str, review_scope_id: str, session_id: str, obs_id: str, ev_id: str, request: Request, db: Session = Depends(get_db)
 ):
     """Delete evidence from an observation."""
     user = getattr(request.state, "user", None)
@@ -2007,29 +2007,29 @@ async def detail_project(
     # Fork: PCI DSS Health Check projects show the health check overview
     if project.project_type == ProjectType.PCI_DSS_HEALTH_CHECK:
         hc_repo = HealthCheckRepository(db)
-        domains = hc_repo.get_domains_for_project(project.id)
-        total_sessions = sum(len(d.sessions) for d in domains)
+        review_scopes = hc_repo.get_review_scopes_for_project(project.id)
+        total_sessions = sum(len(d.sessions) for d in review_scopes)
 
-        # Compute domain stats (pass/fail/not_started counts)
-        domain_stats = {}
-        for domain in domains:
+        # Compute review-scope stats (pass/fail/not_started counts)
+        review_scope_stats = {}
+        for review_scope in review_scopes:
             stats = {s.value: 0 for s in ControlInstanceStatus}
-            for session in domain.sessions:
+            for session in review_scope.sessions:
                 for inst in session.control_instances:
                     stats[inst.status.value] = stats.get(inst.status.value, 0) + 1
-            domain_stats[str(domain.id)] = stats
+            review_scope_stats[str(review_scope.id)] = stats
 
-        # Domain rollup: single status per domain
-        domain_rollup = {str(d.id): compute_domain_rollup(domain_stats[str(d.id)]) for d in domains}
+        # Review-scope rollup: single status per review scope
+        review_scope_rollup = {str(d.id): compute_review_scope_rollup(review_scope_stats[str(d.id)]) for d in review_scopes}
 
         # Project-level assessed %
-        total_instances = sum(sum(stats.values()) for stats in domain_stats.values())
+        total_instances = sum(sum(stats.values()) for stats in review_scope_stats.values())
         assessed_instances = sum(
             stats.get("pass", 0) + stats.get("fail", 0) + stats.get("na", 0) + stats.get("in_progress", 0)
-            for stats in domain_stats.values()
+            for stats in review_scope_stats.values()
         )
         assessed_pct = round(assessed_instances / total_instances * 100) if total_instances > 0 else 0
-        domains_pass = sum(1 for s in domain_rollup.values() if s == "pass")
+        review_scopes_pass = sum(1 for s in review_scope_rollup.values() if s == "pass")
 
         breadcrumbs = [
             {"label": "Projects", "url": "/projects"},
@@ -2041,11 +2041,11 @@ async def detail_project(
                 "request": request,
                 "user": user,
                 "project": project,
-                "domains": domains,
-                "domain_stats": domain_stats,
-                "domain_rollup": domain_rollup,
+                "review_scopes": review_scopes,
+                "review_scope_stats": review_scope_stats,
+                "review_scope_rollup": review_scope_rollup,
                 "assessed_pct": assessed_pct,
-                "domains_pass": domains_pass,
+                "review_scopes_pass": review_scopes_pass,
                 "total_sessions": total_sessions,
                 "breadcrumbs": breadcrumbs,
             },

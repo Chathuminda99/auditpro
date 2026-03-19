@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ domain.label or domain.audit_domain_type.name }} - {{ project.name }}{% endblock %}
+{% block title %}{{ review_scope.label or review_scope.review_scope_type.name }} - {{ project.name }}{% endblock %}
 
 {% block breadcrumb %}
 <nav class="flex items-center gap-2 text-sm mb-0 overflow-x-auto py-0 ml-4">
@@ -30,7 +30,7 @@
     <div>
       <div class="flex items-center gap-3 mb-2">
         <h1 class="text-3xl font-bold text-slate-900 dark:text-white">
-          {{ domain.label or domain.audit_domain_type.name }}
+          {{ review_scope.label or review_scope.review_scope_type.name }}
         </h1>
         {% set rollup_cfg = {
           'pass':        ('check_circle',  'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400', 'Pass'),
@@ -44,8 +44,8 @@
           {{ cfg[2] }}
         </span>
       </div>
-      {% if domain.audit_domain_type.description %}
-      <p class="text-slate-600 dark:text-slate-400 mt-2">{{ domain.audit_domain_type.description }}</p>
+      {% if review_scope.review_scope_type.description %}
+      <p class="text-slate-600 dark:text-slate-400 mt-2">{{ review_scope.review_scope_type.description }}</p>
       {% endif %}
     </div>
   </div>
@@ -54,13 +54,13 @@
   <div class="grid grid-cols-3 gap-4">
     <div class="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
       <div class="text-sm text-slate-600 dark:text-slate-400">Total Sessions</div>
-      <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">{{ domain.sessions|length }}</div>
+      <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">{{ review_scope.sessions|length }}</div>
     </div>
     <div class="p-4 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
       <div class="text-sm text-slate-600 dark:text-slate-400">Controls / Session</div>
       <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">
-        {% if domain.sessions %}
-          {% set first_session = domain.sessions[0] %}
+        {% if review_scope.sessions %}
+          {% set first_session = review_scope.sessions[0] %}
           {{ first_session.control_instances|length }}
         {% else %}
           0
@@ -72,7 +72,7 @@
       <div class="text-2xl font-bold text-slate-900 dark:text-white mt-1">
         {% set total = 0 %}
         {% set assessed = 0 %}
-        {% for session in domain.sessions %}
+        {% for session in review_scope.sessions %}
           {% set total = total + session.control_instances|length %}
           {% for inst in session.control_instances %}
             {% if inst.status.value != 'not_started' %}
@@ -89,7 +89,7 @@
   <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden">
     <div class="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Asset Sessions</h2>
-      <button hx-get="/projects/{{ project.id }}/domains/{{ domain.id }}/sessions/new" hx-target="#modal-body"
+      <button hx-get="/projects/{{ project.id }}/review-scopes/{{ review_scope.id }}/sessions/new" hx-target="#modal-body"
         @click="$store.modal.show()"
         class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:opacity-90 transition-opacity">
         <span class="material-symbols-outlined text-[16px]">add</span>

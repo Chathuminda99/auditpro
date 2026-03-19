@@ -59,12 +59,12 @@
 
   <!-- Stats Grid -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-    <!-- Domains Count -->
+    <!-- Review Scope Count -->
     <div class="p-6 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-slate-500 dark:text-slate-400">Domains</p>
-          <p class="text-3xl font-bold text-slate-900 dark:text-white mt-2">{{ domains|length }}</p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Review Scopes</p>
+          <p class="text-3xl font-bold text-slate-900 dark:text-white mt-2">{{ review_scopes|length }}</p>
         </div>
         <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
           <span class="material-symbols-outlined text-2xl">folder_open</span>
@@ -98,12 +98,12 @@
       </div>
     </div>
 
-    <!-- Domains Compliant -->
+    <!-- Passing Review Scopes -->
     <div class="p-6 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
       <div class="flex items-center justify-between">
         <div>
-          <p class="text-sm text-slate-500 dark:text-slate-400">Compliant</p>
-          <p class="text-3xl font-bold text-slate-900 dark:text-white mt-2">{{ domains_pass }} / {{ domains|length }}</p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Passing</p>
+          <p class="text-3xl font-bold text-slate-900 dark:text-white mt-2">{{ review_scopes_pass }} / {{ review_scopes|length }}</p>
         </div>
         <div class="w-12 h-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
           <span class="material-symbols-outlined text-2xl">verified_user</span>
@@ -112,19 +112,19 @@
     </div>
   </div>
 
-  <!-- Audit Domains Section -->
+  <!-- Review Scopes Section -->
   <div class="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
     <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-      <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Audit Domains</h2>
-      <button hx-get="/projects/{{ project.id }}/domains/add" hx-target="#modal-body" @click="document.getElementById('modal-body').innerHTML = ''; $store.modal.show()"
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Review Scopes</h2>
+      <button hx-get="/projects/{{ project.id }}/review-scopes/add" hx-target="#modal-body" @click="document.getElementById('modal-body').innerHTML = ''; $store.modal.show()"
         class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:opacity-90">
         <span class="material-symbols-outlined text-[16px]">add</span>
-        Add Domain
+        Add Review Scope
       </button>
     </div>
 
-    <div id="domains-grid" class="p-6">
-      {% include "projects/health_check/_domains_grid.html" with context %}
+    <div id="review-scopes-grid" class="p-6">
+      {% include "projects/health_check/_review_scopes_grid.html" with context %}
     </div>
   </div>
 </div>

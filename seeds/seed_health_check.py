@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Idempotent seeder for PCI DSS Health Check framework and audit domain mappings."""
+"""Idempotent seeder for PCI DSS Health Check framework and audit review_scope mappings."""
 
 import sys
 import json
@@ -17,13 +17,13 @@ from app.models import (
     Framework,
     FrameworkSection,
     FrameworkControl,
-    AuditDomainType,
-    ControlToDomainMapping,
+    ReviewScopeType,
+    ControlToReviewScopeMapping,
 )
 
 
 def seed_health_check():
-    """Load PCI DSS framework, sections, controls, and audit domain mappings."""
+    """Load PCI DSS framework, sections, controls, and audit review_scope mappings."""
     # Create all tables
     BaseModel.metadata.create_all(bind=engine)
 
@@ -138,22 +138,22 @@ def seed_health_check():
         db.commit()
         print(f"✓ Ensured {len(seed_data['controls'])} framework controls")
 
-        # Create audit domain types (idempotent by name + framework_id)
+        # Create audit review_scope types (idempotent by name + framework_id)
         domain_type_cache = {}
 
-        for domain_def in seed_data["domains"]:
+        for domain_def in seed_data["review_scopes"]:
             domain_name = domain_def["name"]
             sort_order = domain_def.get("sort_order", 0)
 
-            existing_domain_type = db.query(AuditDomainType).filter(
-                AuditDomainType.framework_id == framework_id,
-                AuditDomainType.name == domain_name,
+            existing_domain_type = db.query(ReviewScopeType).filter(
+                ReviewScopeType.framework_id == framework_id,
+                ReviewScopeType.name == domain_name,
             ).first()
 
             if existing_domain_type:
                 domain_type_cache[domain_name] = existing_domain_type.id
             else:
-                domain_type_obj = AuditDomainType(
+                domain_type_obj = ReviewScopeType(
                     id=uuid.uuid4(),
                     framework_id=framework_id,
                     name=domain_name,
@@ -165,38 +165,38 @@ def seed_health_check():
                 domain_type_cache[domain_name] = domain_type_obj.id
 
         db.commit()
-        print(f"✓ Ensured {len(seed_data['domains'])} audit domain types")
+        print(f"✓ Ensured {len(seed_data['review_scopes'])} audit review_scope types")
 
-        # Create control-to-domain mappings (idempotent with UniqueConstraint)
+        # Create control-to-review_scope mappings (idempotent with UniqueConstraint)
         mapping_count = 0
 
-        for domain_def in seed_data["domains"]:
+        for domain_def in seed_data["review_scopes"]:
             domain_name = domain_def["name"]
-            domain_type_id = domain_type_cache[domain_name]
+            review_scope_type_id = domain_type_cache[domain_name]
             control_ids = domain_def.get("control_ids", [])
 
             for control_id_str in control_ids:
                 control_fk_id = control_cache.get(control_id_str)
                 if not control_fk_id:
-                    print(f"  ⚠ Control {control_id_str} not found for domain {domain_name}")
+                    print(f"  ⚠ Control {control_id_str} not found for review_scope {domain_name}")
                     continue
 
-                existing_mapping = db.query(ControlToDomainMapping).filter(
-                    ControlToDomainMapping.audit_domain_type_id == domain_type_id,
-                    ControlToDomainMapping.framework_control_id == control_fk_id,
+                existing_mapping = db.query(ControlToReviewScopeMapping).filter(
+                    ControlToReviewScopeMapping.review_scope_type_id == review_scope_type_id,
+                    ControlToReviewScopeMapping.framework_control_id == control_fk_id,
                 ).first()
 
                 if not existing_mapping:
-                    mapping_obj = ControlToDomainMapping(
+                    mapping_obj = ControlToReviewScopeMapping(
                         id=uuid.uuid4(),
-                        audit_domain_type_id=domain_type_id,
+                        review_scope_type_id=review_scope_type_id,
                         framework_control_id=control_fk_id,
                     )
                     db.add(mapping_obj)
                     mapping_count += 1
 
         db.commit()
-        print(f"✓ Ensured {mapping_count} control-to-domain mappings")
+        print(f"✓ Ensured {mapping_count} control-to-review_scope mappings")
 
         print("\n✅ PCI DSS Health Check seed data loaded successfully")
 

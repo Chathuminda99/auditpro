@@ -19,9 +19,9 @@ from app.models.project import (
 )
 from app.models.workflow import WorkflowExecution, WorkflowExecutionStatus
 from app.models.health_check import (
-    AuditDomainType,
-    ControlToDomainMapping,
-    AuditDomain,
+    ReviewScopeType,
+    ControlToReviewScopeMapping,
+    ReviewScope,
     AuditSession,
     SessionControlInstance,
     ControlInstanceEvidenceFile,
@@ -48,9 +48,9 @@ __all__ = [
     "ResponseStatus",
     "WorkflowExecution",
     "WorkflowExecutionStatus",
-    "AuditDomainType",
-    "ControlToDomainMapping",
-    "AuditDomain",
+    "ReviewScopeType",
+    "ControlToReviewScopeMapping",
+    "ReviewScope",
     "AuditSession",
     "SessionControlInstance",
     "ControlInstanceEvidenceFile",

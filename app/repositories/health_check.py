@@ -1,121 +1,121 @@
-"""Health check repository for audit domains and domain types."""
+"""Health check repository for review scopes and review scope types."""
 
 from typing import List
 from uuid import UUID
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, not_, func
 from app.models.health_check import (
-    AuditDomain,
-    AuditDomainType,
+    ReviewScope,
+    ReviewScopeType,
     AuditSession,
     SessionControlInstance,
     ControlInstanceEvidenceFile,
     SessionControlObservation,
     SessionControlObservationEvidence,
-    ControlToDomainMapping,
+    ControlToReviewScopeMapping,
     ControlInstanceStatus,
 )
 from app.repositories.base import BaseRepository
 
 
-class HealthCheckRepository(BaseRepository[AuditDomain]):
-    """Repository for AuditDomain model with domain type relationships."""
+class HealthCheckRepository(BaseRepository[ReviewScope]):
+    """Repository for ReviewScope with review-scope-aware queries."""
 
-    model = AuditDomain
+    model = ReviewScope
 
     def __init__(self, db: Session):
         """Initialize health check repository."""
         super().__init__(db)
 
-    def get_domain_types_for_framework(
+    def get_review_scope_types_for_framework(
         self, framework_id: UUID
-    ) -> List[AuditDomainType]:
-        """Get all domain types for a framework, sorted by sort_order."""
-        return self.db.query(AuditDomainType).filter(
-            AuditDomainType.framework_id == framework_id
-        ).order_by(AuditDomainType.sort_order).all()
+    ) -> List[ReviewScopeType]:
+        """Get all review scope types for a framework, sorted by sort_order."""
+        return self.db.query(ReviewScopeType).filter(
+            ReviewScopeType.framework_id == framework_id
+        ).order_by(ReviewScopeType.sort_order).all()
 
-    def get_unadded_domain_types(
+    def get_unadded_review_scope_types(
         self, project_id: UUID, framework_id: UUID
-    ) -> List[AuditDomainType]:
-        """Get domain types not yet added to the project."""
-        # Subquery: domain type IDs already added to this project
-        added_domain_type_ids = self.db.query(AuditDomain.audit_domain_type_id).filter(
-            AuditDomain.project_id == project_id
+    ) -> List[ReviewScopeType]:
+        """Get review scope types not yet added to the project."""
+        # Subquery: review scope type IDs already added to this project
+        added_review_scope_type_ids = self.db.query(ReviewScope.review_scope_type_id).filter(
+            ReviewScope.project_id == project_id
         ).all()
-        added_ids = [row[0] for row in added_domain_type_ids]
+        added_ids = [row[0] for row in added_review_scope_type_ids]
 
-        # Query domain types not in the added list
-        return self.db.query(AuditDomainType).filter(
+        # Query review scope types not in the added list
+        return self.db.query(ReviewScopeType).filter(
             and_(
-                AuditDomainType.framework_id == framework_id,
-                not_(AuditDomainType.id.in_(added_ids)) if added_ids else True
+                ReviewScopeType.framework_id == framework_id,
+                not_(ReviewScopeType.id.in_(added_ids)) if added_ids else True
             )
-        ).order_by(AuditDomainType.sort_order).all()
+        ).order_by(ReviewScopeType.sort_order).all()
 
-    def get_domains_for_project(self, project_id: UUID) -> List[AuditDomain]:
-        """Get all domains for a project with eager-loaded domain types, sessions, and control instances."""
-        return self.db.query(AuditDomain).filter(
-            AuditDomain.project_id == project_id
+    def get_review_scopes_for_project(self, project_id: UUID) -> List[ReviewScope]:
+        """Get all review scopes for a project with eager-loaded related data."""
+        return self.db.query(ReviewScope).filter(
+            ReviewScope.project_id == project_id
         ).options(
-            joinedload(AuditDomain.audit_domain_type),
-            joinedload(AuditDomain.sessions).joinedload(AuditSession.control_instances)
-        ).order_by(AuditDomain.sort_order).all()
+            joinedload(ReviewScope.review_scope_type),
+            joinedload(ReviewScope.sessions).joinedload(AuditSession.control_instances)
+        ).order_by(ReviewScope.sort_order).all()
 
-    def get_domain_by_id(self, domain_id: UUID) -> AuditDomain | None:
-        """Get a domain by ID with eager-loaded domain type."""
-        return self.db.query(AuditDomain).filter(
-            AuditDomain.id == domain_id
+    def get_review_scope_by_id(self, review_scope_id: UUID) -> ReviewScope | None:
+        """Get a review scope by ID with its type eagerly loaded."""
+        return self.db.query(ReviewScope).filter(
+            ReviewScope.id == review_scope_id
         ).options(
-            joinedload(AuditDomain.audit_domain_type)
+            joinedload(ReviewScope.review_scope_type)
         ).first()
 
-    def add_domain_to_project(
+    def add_review_scope_to_project(
         self,
         project_id: UUID,
-        domain_type_id: UUID,
+        review_scope_type_id: UUID,
         label: str | None = None,
         sort_order: int = 0,
-    ) -> AuditDomain:
-        """Add a domain to a project and return it with relationships loaded."""
-        domain = AuditDomain(
+    ) -> ReviewScope:
+        """Add a review scope to a project and return it with relationships loaded."""
+        review_scope = ReviewScope(
             project_id=project_id,
-            audit_domain_type_id=domain_type_id,
+            review_scope_type_id=review_scope_type_id,
             label=label,
             sort_order=sort_order,
         )
-        self.db.add(domain)
+        self.db.add(review_scope)
         self.db.commit()
-        self.db.refresh(domain, ["audit_domain_type", "sessions"])
-        return domain
+        self.db.refresh(review_scope, ["review_scope_type", "sessions"])
+        return review_scope
 
-    def remove_domain(self, domain_id: UUID) -> bool:
-        """Delete a domain (cascades to sessions via relationship)."""
-        domain = self.db.query(AuditDomain).filter(
-            AuditDomain.id == domain_id
+    def remove_review_scope(self, review_scope_id: UUID) -> bool:
+        """Delete a review scope and cascade to its sessions."""
+        review_scope = self.db.query(ReviewScope).filter(
+            ReviewScope.id == review_scope_id
         ).first()
-        if not domain:
+        if not review_scope:
             return False
-        self.db.delete(domain)
+        self.db.delete(review_scope)
         self.db.commit()
         return True
 
-    # === Domain Detail ===
+    # === Review Scope Detail ===
 
-    def get_domain_with_sessions(self, domain_id: UUID) -> AuditDomain | None:
-        """Load domain with sessions (no control instances) for domain detail page."""
-        return self.db.query(AuditDomain).filter(
-            AuditDomain.id == domain_id
+    def get_review_scope_with_sessions(self, review_scope_id: UUID) -> ReviewScope | None:
+        """Load a review scope with sessions for the detail page."""
+        return self.db.query(ReviewScope).filter(
+            ReviewScope.id == review_scope_id
         ).options(
-            joinedload(AuditDomain.audit_domain_type),
-            joinedload(AuditDomain.sessions),
+            joinedload(ReviewScope.review_scope_type),
+            joinedload(ReviewScope.sessions),
         ).first()
 
     # === Session CRUD ===
 
     def create_session(
         self,
-        domain_id: UUID,
+        review_scope_id: UUID,
         project_id: UUID,
         name: str,
         asset_identifier: str | None = None,
@@ -123,7 +123,7 @@ class HealthCheckRepository(BaseRepository[AuditDomain]):
     ) -> AuditSession:
         """Create a new audit session."""
         session = AuditSession(
-            audit_domain_id=domain_id,
+            review_scope_id=review_scope_id,
             project_id=project_id,
             name=name,
             asset_identifier=asset_identifier,
@@ -131,15 +131,15 @@ class HealthCheckRepository(BaseRepository[AuditDomain]):
         )
         self.db.add(session)
         self.db.commit()
-        self.db.refresh(session, ["audit_domain", "control_instances"])
+        self.db.refresh(session, ["review_scope", "control_instances"])
         return session
 
     def get_session_by_id(self, session_id: UUID) -> AuditSession | None:
-        """Get a session by ID with eager-loaded domain type."""
+        """Get a session by ID with its review scope and type."""
         return self.db.query(AuditSession).filter(
             AuditSession.id == session_id
         ).options(
-            joinedload(AuditSession.audit_domain).joinedload(AuditDomain.audit_domain_type)
+            joinedload(AuditSession.review_scope).joinedload(ReviewScope.review_scope_type)
         ).first()
 
     def delete_session(self, session_id: UUID) -> bool:
@@ -155,12 +155,12 @@ class HealthCheckRepository(BaseRepository[AuditDomain]):
 
     # === Control Instance Seeding ===
 
-    def seed_control_instances(self, session: AuditSession, domain_type_id: UUID) -> int:
-        """Create SessionControlInstance rows for all controls mapped to this domain type.
+    def seed_control_instances(self, session: AuditSession, review_scope_type_id: UUID) -> int:
+        """Create SessionControlInstance rows for all controls mapped to this review scope type.
         Returns count of instances created."""
-        mappings = self.db.query(ControlToDomainMapping).filter(
-            ControlToDomainMapping.audit_domain_type_id == domain_type_id
-        ).options(joinedload(ControlToDomainMapping.framework_control)).all()
+        mappings = self.db.query(ControlToReviewScopeMapping).filter(
+            ControlToReviewScopeMapping.review_scope_type_id == review_scope_type_id
+        ).options(joinedload(ControlToReviewScopeMapping.framework_control)).all()
 
         for mapping in mappings:
             ctrl = mapping.framework_control
@@ -304,6 +304,17 @@ class HealthCheckRepository(BaseRepository[AuditDomain]):
         self.db.commit()
         self.db.refresh(obs, ["evidence_files"])
         return obs
+
+    def update_observation_recommendation(self, observation_id: UUID, recommendation_text: str | None) -> bool:
+        """Update the recommendation text of an existing observation."""
+        obs = self.db.query(SessionControlObservation).filter(
+            SessionControlObservation.id == observation_id
+        ).first()
+        if not obs:
+            return False
+        obs.recommendation_text = recommendation_text
+        self.db.commit()
+        return True
 
     def delete_observation(self, observation_id: UUID) -> bool:
         """Delete an observation (cascades to evidence)."""
