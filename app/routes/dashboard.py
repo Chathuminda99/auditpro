@@ -30,9 +30,9 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
     framework_repo = FrameworkRepository(db)
     response_repo = ProjectResponseRepository(db)
 
-    all_projects = project_repo.get_all(user.tenant_id)
-    active_projects = project_repo.get_by_status(user.tenant_id, ProjectStatus.IN_PROGRESS)
-    completed_projects = project_repo.get_by_status(user.tenant_id, ProjectStatus.COMPLETED)
+    all_projects = project_repo.filter_projects(user.tenant_id, user=user)
+    active_projects = project_repo.filter_projects(user.tenant_id, status=ProjectStatus.IN_PROGRESS, user=user)
+    completed_projects = project_repo.filter_projects(user.tenant_id, status=ProjectStatus.COMPLETED, user=user)
     pending_responses = response_repo.count_pending_for_tenant(user.tenant_id)
 
     stats = {
