@@ -339,6 +339,9 @@
 </div>
 
 <script>
+  try { localStorage.setItem('hc_last_location_{{ project.id }}', window.location.pathname); } catch(e) {}
+</script>
+<script>
   // Enable and reset sidebar save button when a control panel is loaded/reloaded
   document.body.addEventListener('htmx:afterSwap', function(evt) {
     if (evt.detail.target && evt.detail.target.id === 'control-panel') {

@@ -81,6 +81,101 @@
 
         {% for item in active_projects %}
         {% set project = item.project %}
+        {% set status_config = {
+        'not_started': {'bg': 'bg-slate-100 dark:bg-slate-800', 'text': 'text-slate-600 dark:text-slate-400', 'icon': 'radio_button_unchecked'},
+        'draft': {'bg': 'bg-slate-100 dark:bg-slate-800', 'text': 'text-slate-600 dark:text-slate-400', 'icon': 'edit'},
+        'in_progress': {'bg': 'bg-blue-100 dark:bg-blue-900/30', 'text': 'text-blue-700 dark:text-blue-400', 'icon': 'schedule'},
+        'review': {'bg': 'bg-amber-100 dark:bg-amber-900/30', 'text': 'text-amber-700 dark:text-amber-400', 'icon': 'preview'},
+        'completed': {'bg': 'bg-emerald-100 dark:bg-emerald-900/30', 'text': 'text-emerald-700 dark:text-emerald-400', 'icon': 'check_circle'}
+        } %}
+        {% set status_info = status_config.get(project.status.value, status_config['draft']) %}
+
+        {% if project.project_type and project.project_type.value == 'pci_dss_health_check' %}
+        <!-- Health Check project card -->
+        <div x-data="{
+            lastLocation: null,
+            init() {
+                try {
+                    const loc = localStorage.getItem('hc_last_location_{{ project.id }}');
+                    if (loc && loc !== '/projects/{{ project.id }}') this.lastLocation = loc;
+                } catch(e) {}
+            }
+        }" class="group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all hover:border-primary/40 overflow-hidden flex flex-col">
+            <!-- Accent line (amber→primary→blue distinguishes health check cards) -->
+            <div class="h-1 bg-gradient-to-r from-amber-400 via-primary to-blue-400"></div>
+
+            <!-- Card Content -->
+            <div class="p-6 flex flex-col flex-1">
+                <!-- Framework + HC badge + Status -->
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="inline-flex items-center gap-1 bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-semibold truncate">
+                            <span class="material-symbols-outlined flex-shrink-0" style="font-size:14px">account_tree</span>
+                            {{ project.framework.name if project.framework else "Framework" }}
+                        </span>
+                        <span class="inline-flex items-center gap-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-1 rounded-full text-xs font-semibold flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" height="14px" viewBox="0 -960 960 960" width="14px" fill="currentColor"><path d="M480-480Zm0 360q-18 0-34.5-6.5T416-146L148-415q-35-35-51.5-80T80-589q0-103 67-177t167-74q48 0 90.5 19t75.5 53q32-34 74.5-53t90.5-19q100 0 167.5 74T880-590q0 49-17 94t-51 80L543-146q-13 13-29 19.5t-34 6.5Zm40-520q10 0 19 5t14 13l68 102h166q7-17 10.5-34.5T801-590q-2-69-46-118.5T645-758q-31 0-59.5 12T536-711l-27 29q-5 6-13 9.5t-16 3.5q-8 0-16-3.5t-14-9.5l-27-29q-21-23-49-36t-60-13q-66 0-110 50.5T160-590q0 18 3 35.5t10 34.5h187q10 0 19 5t14 13l35 52 54-162q4-12 14.5-20t23.5-8Zm12 130-54 162q-4 12-15 20t-24 8q-10 0-19-5t-14-13l-68-102H236l237 237q2 2 3.5 2.5t3.5.5q2 0 3.5-.5t3.5-2.5l236-237H600q-10 0-19-5t-15-13l-34-52Z"/></svg>
+                            HC
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-1 {{ status_info.bg }} {{ status_info.text }} px-3 py-1 rounded-full text-xs font-semibold flex-shrink-0">
+                        <span class="material-symbols-outlined" style="font-size:14px">{{ status_info.icon }}</span>
+                        {{ project.status.value|replace('_', ' ')|title }}
+                    </div>
+                </div>
+
+                <!-- Title and Description -->
+                <a href="/projects/{{ project.id }}" class="block">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-2 group-hover:text-primary transition-colors line-clamp-1">
+                        {{ project.name }}
+                    </h3>
+                </a>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2 flex-1">
+                    {{ project.description or "No description provided." }}
+                </p>
+
+                <!-- Client Info -->
+                {% if project.client %}
+                <div class="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <span class="material-symbols-outlined text-slate-400" style="font-size:16px">corporate_fare</span>
+                    <span class="text-sm text-slate-600 dark:text-slate-400">{{ project.client.name }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Progress -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                            Progress
+                            {% if item.total_controls > 0 %}
+                            <span class="normal-case font-normal">({{ item.responded_count }}/{{ item.total_controls }})</span>
+                            {% endif %}
+                        </span>
+                        <span class="text-sm font-bold text-slate-900 dark:text-white">{{ item.progress_pct }}%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div class="bg-gradient-to-r from-amber-400 to-primary h-full rounded-full transition-all" style="width: {{ item.progress_pct }}%"></div>
+                    </div>
+                </div>
+
+                <!-- Footer with Overview + Continue actions -->
+                <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <a href="/projects/{{ project.id }}"
+                       class="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined" style="font-size:14px">folder_open</span>
+                        Overview
+                    </a>
+                    <a x-show="lastLocation" :href="lastLocation"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors">
+                        <span class="material-symbols-outlined" style="font-size:14px">history</span>
+                        Continue
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Standard audit project card -->
         <a href="/projects/{{ project.id }}"
             class="group bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all hover:border-primary/40 overflow-hidden flex flex-col">
             <!-- Card Header with accent line -->
@@ -94,16 +189,6 @@
                         <span class="material-symbols-outlined" style="font-size:14px">account_tree</span>
                         {{ project.framework.name if project.framework else "Framework" }}
                     </span>
-
-                    {% set status_config = {
-                    'not_started': {'bg': 'bg-slate-100 dark:bg-slate-800', 'text': 'text-slate-600 dark:text-slate-400', 'icon': 'radio_button_unchecked'},
-                    'draft': {'bg': 'bg-slate-100 dark:bg-slate-800', 'text': 'text-slate-600 dark:text-slate-400', 'icon': 'edit'},
-                    'in_progress': {'bg': 'bg-blue-100 dark:bg-blue-900/30', 'text': 'text-blue-700 dark:text-blue-400', 'icon': 'schedule'},
-                    'review': {'bg': 'bg-amber-100 dark:bg-amber-900/30', 'text': 'text-amber-700 dark:text-amber-400', 'icon': 'preview'},
-                    'completed': {'bg': 'bg-emerald-100 dark:bg-emerald-900/30', 'text': 'text-emerald-700 dark:text-emerald-400', 'icon': 'check_circle'}
-                    } %}
-                    {% set status_info = status_config.get(project.status.value, status_config['draft']) %}
-
                     <div class="flex items-center gap-1 {{ status_info.bg }} {{ status_info.text }} px-3 py-1 rounded-full text-xs font-semibold">
                         <span class="material-symbols-outlined" style="font-size:14px">{{ status_info.icon }}</span>
                         {{ project.status.value|replace('_', ' ')|title }}
@@ -152,6 +237,7 @@
                 </div>
             </div>
         </a>
+        {% endif %}
         {% endfor %}
 
         <!-- Add New Project Button -->

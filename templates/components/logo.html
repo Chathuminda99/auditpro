@@ -1,30 +1,30 @@
-<svg class="{{ class|default('w-full h-full') }}" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-        <linearGradient id="auditproGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#3b82f6" /> <!-- blue-500 -->
-            <stop offset="100%" stop-color="#2563eb" /> <!-- blue-600 -->
-        </linearGradient>
-        <linearGradient id="auditproGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#60a5fa" /> <!-- blue-400 -->
-            <stop offset="100%" stop-color="#3b82f6" /> <!-- blue-500 -->
-        </linearGradient>
-    </defs>
-
-    <!-- Outer Shield Outline with glow -->
-    <path d="M16 2 L4 8 V16 C4 23 9 28 16 30 C23 28 28 23 28 16 V8 L16 2 Z" stroke="url(#auditproGrad1)" stroke-width="2"
-        stroke-linejoin="round" />
-
-    <!-- Inner Shield Base/Highlight -->
-    <path d="M16 5 L7 9.5 V15.5 C7 21 11 25 16 26.5 C21 25 25 21 25 15.5 V9.5 L16 5 Z" fill="url(#auditproGrad2)"
-        opacity="0.15" />
-
-    <!-- The AuditPro 'A' -->
-    <path d="M10 11 H22 V13 H17 V21 H15 V13 H10 V11 Z" fill="url(#auditproGrad1)" />
-
-    <!-- Scale connectors -->
-    <path d="M12.5 13 V17 M19.5 13 V17" stroke="url(#auditproGrad1)" stroke-width="1.5" stroke-linecap="round" />
-
-    <!-- Scale Nodes -->
-    <circle cx="12.5" cy="18" r="1.5" fill="url(#auditproGrad2)" />
-    <circle cx="19.5" cy="18" r="1.5" fill="url(#auditproGrad2)" />
+<svg class="{{ class|default('w-full h-full') }}" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Document with folded corner -->
+  <path fill="currentColor" d="M 80 30 L 255 30 L 310 85 L 310 340 L 80 340 Z"/>
+  <!-- White interior of document -->
+  <rect x="95" y="55" width="200" height="270" rx="2" fill="white"/>
+  <!-- Folded corner -->
+  <path fill="currentColor" d="M 255 30 L 310 85 L 255 85 Z" opacity="0.25"/>
+  <!-- Bar chart - 3 bars -->
+  <rect fill="currentColor" x="115" y="105" width="22" height="55" rx="2"/>
+  <rect fill="currentColor" x="145" y="85" width="22" height="75" rx="2"/>
+  <rect fill="currentColor" x="175" y="70" width="22" height="90" rx="2"/>
+  <!-- Horizontal lines -->
+  <rect fill="currentColor" x="115" y="178" width="130" height="8" rx="3"/>
+  <rect fill="currentColor" x="115" y="198" width="150" height="8" rx="3"/>
+  <rect fill="currentColor" x="115" y="218" width="120" height="8" rx="3"/>
+  <rect fill="currentColor" x="115" y="238" width="145" height="8" rx="3"/>
+  <rect fill="currentColor" x="115" y="258" width="110" height="8" rx="3"/>
+  <rect fill="currentColor" x="115" y="278" width="135" height="8" rx="3"/>
+  <rect fill="currentColor" x="115" y="298" width="100" height="8" rx="3"/>
+  <!-- Magnifying glass -->
+  <circle cx="250" cy="255" r="62" fill="currentColor"/>
+  <circle cx="250" cy="255" r="48" fill="white"/>
+  <circle cx="250" cy="255" r="38" fill="currentColor" opacity="0.08"/>
+  <!-- Magnifying glass handle -->
+  <rect x="288" y="298" width="28" height="72" rx="12" fill="currentColor" transform="rotate(-45, 302, 334)"/>
+  <!-- Checkmark circle -->
+  <circle cx="110" cy="340" r="38" fill="currentColor"/>
+  <circle cx="110" cy="340" r="28" fill="white"/>
+  <polyline points="93,340 105,354 130,326" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

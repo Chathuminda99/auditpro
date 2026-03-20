@@ -94,3 +94,5 @@ static/uploads/
 *.bak
 
 sample_docs/*
+
+.playwright-mcp/*

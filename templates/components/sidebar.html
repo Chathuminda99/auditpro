@@ -5,8 +5,8 @@
     :class="sidebarOpen ? 'w-64' : 'w-20'">
     <!-- Sidebar Header -->
     <div class="h-16 px-4 flex items-center gap-2.5 border-b border-slate-200 dark:border-slate-800" :class="sidebarOpen ? 'justify-start' : 'justify-center'">
-        <div class="bg-primary p-2 rounded-lg text-white flex-shrink-0">
-            {{ icon_macro.icon('shield', 'white', '20') }}
+        <div class="flex-shrink-0 text-primary w-9 h-9">
+            {% with class="w-9 h-9" %}{% include "components/logo.html" %}{% endwith %}
         </div>
         <div x-show="sidebarOpen" x-transition.opacity>
             <h1 class="text-base font-bold leading-none tracking-tight" style="font-family: 'Audiowide', sans-serif;">AuditPro</h1>

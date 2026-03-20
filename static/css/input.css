@@ -133,11 +133,11 @@
 
   .dark {
     /* Jamaica Theme — Dark Mode (HSL approximations of oklch values) */
-    --background: 164 7% 8%;
+    --background: 222 47% 7%;
     --foreground: 88 8% 96%;
-    --card: 162 9% 11%;
+    --card: 222 47% 11%;
     --card-foreground: 88 8% 96%;
-    --popover: 163 9% 9%;
+    --popover: 222 47% 11%;
     --popover-foreground: 88 8% 96%;
     --primary: 142 60% 64%;
     --primary-foreground: 164 7% 8%;

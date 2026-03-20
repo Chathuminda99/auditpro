@@ -54,23 +54,51 @@
         <!-- Divider -->
         <div class="h-6 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
 
-        <!-- Theme Switcher (Light/Dark/Auto) -->
-        <div class="relative group">
-            <button
+        <!-- Theme Switcher -->
+        <div x-data="{
+            open: false,
+            theme: localStorage.getItem('theme') || 'auto',
+            init() {
+                this.apply(this.theme);
+            },
+            apply(t) {
+                this.theme = t;
+                localStorage.setItem('theme', t);
+                if (t === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else if (t === 'light') {
+                    document.documentElement.classList.remove('dark');
+                } else {
+                    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                }
+                this.open = false;
+            }
+        }" class="relative">
+            <button @click="open = !open" @click.outside="open = false"
                 class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
                 title="Theme">
-                {{ icon_macro.icon('sun', 'currentColor', '22') }}
+                <template x-if="theme === 'dark'">{{ icon_macro.icon('moon', 'currentColor', '22') }}</template>
+                <template x-if="theme === 'light'">{{ icon_macro.icon('sun', 'currentColor', '22') }}</template>
+                <template x-if="theme === 'auto'">{{ icon_macro.icon('sun', 'currentColor', '22') }}</template>
             </button>
-            <div class="absolute right-0 mt-0 hidden group-hover:block bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-2 min-w-[150px] z-50">
-                <button class="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left text-slate-700 dark:text-slate-300">
+            <div x-show="open" x-transition
+                class="absolute right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-2 min-w-[140px] z-50">
+                <button @click="apply('light')" class="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left text-slate-700 dark:text-slate-300"
+                    :class="theme === 'light' ? 'text-primary font-semibold' : ''">
                     {{ icon_macro.icon('sun', 'currentColor', '18') }}
                     Light
                 </button>
-                <button class="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left text-slate-700 dark:text-slate-300">
+                <button @click="apply('dark')" class="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left text-slate-700 dark:text-slate-300"
+                    :class="theme === 'dark' ? 'text-primary font-semibold' : ''">
                     {{ icon_macro.icon('moon', 'currentColor', '18') }}
                     Dark
                 </button>
-                <button class="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left text-slate-700 dark:text-slate-300">
+                <button @click="apply('auto')" class="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left text-slate-700 dark:text-slate-300"
+                    :class="theme === 'auto' ? 'text-primary font-semibold' : ''">
                     {{ icon_macro.icon('sun', 'currentColor', '18') }}
                     Auto
                 </button>

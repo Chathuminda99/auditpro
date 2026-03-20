@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <style>
+      .icon-fill { fill: #1a3d8f; }
+      .icon-stroke { stroke: #1a3d8f; fill: none; }
+    </style>
+  </defs>
+
+  <!-- Document with folded corner -->
+  <path class="icon-fill" d="
+    M 80 40
+    L 260 40
+    L 310 90
+    L 310 340
+    L 80 340
+    Z
+  " opacity="0.12"/>
+  <path class="icon-fill" d="
+    M 80 30
+    L 255 30
+    L 310 85
+    L 310 340
+    L 80 340
+    Z
+  "/>
+  <!-- White interior of document -->
+  <rect x="95" y="55" width="200" height="270" rx="2" fill="white"/>
+
+  <!-- Folded corner -->
+  <path fill="white" d="
+    M 255 30
+    L 255 85
+    L 310 85
+    Z
+  " opacity="0.5"/>
+  <path class="icon-fill" d="
+    M 255 30
+    L 310 85
+    L 255 85
+    Z
+  " opacity="0.25"/>
+
+  <!-- Bar chart - 3 bars -->
+  <rect class="icon-fill" x="115" y="105" width="22" height="55" rx="2"/>
+  <rect class="icon-fill" x="145" y="85" width="22" height="75" rx="2"/>
+  <rect class="icon-fill" x="175" y="70" width="22" height="90" rx="2"/>
+
+  <!-- Horizontal lines (text placeholders) -->
+  <rect class="icon-fill" x="115" y="178" width="130" height="8" rx="3"/>
+  <rect class="icon-fill" x="115" y="198" width="150" height="8" rx="3"/>
+  <rect class="icon-fill" x="115" y="218" width="120" height="8" rx="3"/>
+  <rect class="icon-fill" x="115" y="238" width="145" height="8" rx="3"/>
+  <rect class="icon-fill" x="115" y="258" width="110" height="8" rx="3"/>
+  <rect class="icon-fill" x="115" y="278" width="135" height="8" rx="3"/>
+  <rect class="icon-fill" x="115" y="298" width="100" height="8" rx="3"/>
+
+  <!-- Magnifying glass -->
+  <circle cx="250" cy="255" r="62" fill="#1a3d8f"/>
+  <circle cx="250" cy="255" r="48" fill="white"/>
+  <circle cx="250" cy="255" r="38" fill="#1a3d8f" opacity="0.08"/>
+
+  <!-- Magnifying glass handle -->
+  <rect x="288" y="298" width="28" height="72" rx="12" fill="#1a3d8f" transform="rotate(-45, 302, 334)"/>
+
+  <!-- Checkmark circle (bottom-left) -->
+  <circle cx="110" cy="340" r="38" fill="#1a3d8f"/>
+  <circle cx="110" cy="340" r="28" fill="white"/>
+  <!-- Checkmark -->
+  <polyline points="93,340 105,354 130,326" fill="none" stroke="#1a3d8f" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
