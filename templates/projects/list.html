@@ -7,11 +7,12 @@
       <h1 class="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">Projects</h1>
       <p class="text-slate-500 mt-2 text-sm md:text-base">Manage and track your compliance assessments.</p>
     </div>
-    <a href="/projects/new"
-      class="px-5 py-2.5 bg-primary hover:bg-primary/90 rounded-lg flex items-center justify-center gap-2 text-sm font-bold text-white transition-all">
-      <span class="material-symbols-outlined text-[14px]">add_circle</span>
-      New Project
-    </a>
+    {% set ihb_text = "New Project" %}
+    {% set ihb_href = "/projects/new" %}
+    {% set ihb_class = "w-36" %}
+    {% include "components/interactive_hover_button.html" %}
+    {% set ihb_href = "" %}
+    {% set ihb_class = "" %}
   </div>
 
   <!-- Filter Bar -->

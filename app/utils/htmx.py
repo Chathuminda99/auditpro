@@ -19,3 +19,8 @@ def htmx_toast(message: str, type: str = "success", headers: dict = None) -> dic
     
     headers["HX-Trigger"] = json.dumps(triggers)
     return headers
+
+
+def is_htmx_request(request) -> bool:
+    """Return True if this is an HTMX partial request (HX-Request header present)."""
+    return request.headers.get("HX-Request") == "true"

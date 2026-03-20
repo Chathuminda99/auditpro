@@ -51,6 +51,31 @@
     </div>
   </section>
 
+  <!-- ============ INTERACTIVE HOVER BUTTON ============ -->
+  <section class="space-y-6">
+    <h2 class="text-2xl font-semibold">Interactive Hover Button</h2>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 space-y-4">
+      <div class="space-y-2">
+        <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Default</p>
+        <div class="flex gap-4 flex-wrap items-center">
+          {% set ihb_text = "Button" %}
+          {% include "components/interactive_hover_button.html" %}
+        </div>
+      </div>
+      <div class="space-y-2">
+        <p class="text-sm font-medium text-slate-600 dark:text-slate-400">Custom label &amp; wider</p>
+        <div class="flex gap-4 flex-wrap items-center">
+          {% set ihb_text = "Get Started" %}
+          {% set ihb_class = "w-40" %}
+          {% include "components/interactive_hover_button.html" %}
+          {% set ihb_text = "Learn More" %}
+          {% set ihb_class = "w-40" %}
+          {% include "components/interactive_hover_button.html" %}
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ PHASE 1: BADGES ============ -->
   <section class="space-y-6">
     <h2 class="text-2xl font-semibold">Phase 1: Badges</h2>

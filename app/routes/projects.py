@@ -31,7 +31,7 @@ from app.services import workflow_engine
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 from app.templates import templates
-from app.utils.htmx import htmx_toast
+from app.utils.htmx import htmx_toast, is_htmx_request
 
 
 SERVER_DRAFT_MAX_BYTES = 1_000_000
@@ -341,7 +341,8 @@ async def edit_project_form(
     project = repo.get_by_id_with_details(user.tenant_id, project_id)
 
     if not project:
-        return RedirectResponse(url="/projects", status_code=302)
+        return HTMLResponse("", status_code=204,
+                            headers=htmx_toast("Project not found.", "error"))
 
     client_repo = ClientRepository(db)
     framework_repo = FrameworkRepository(db)
@@ -399,7 +400,8 @@ async def update_project(
     )
 
     if not project:
-        return RedirectResponse(url="/projects", status_code=302)
+        return HTMLResponse("", status_code=204,
+                            headers=htmx_toast("Project not found.", "error"))
 
     # Refresh to get related objects
     db.refresh(project, ["client", "framework"])
@@ -702,7 +704,8 @@ async def review_scope_detail(
     review_scope = hc_repo.get_review_scope_with_sessions(uuid.UUID(review_scope_id))
 
     if not review_scope or review_scope.project_id != project.id:
-        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302,
+                                headers=htmx_toast("Review scope not found.", "error"))
 
     # Compute per-session stats
     session_stats = {}
@@ -897,13 +900,15 @@ async def session_detail(
     session = hc_repo.get_session_by_id(uuid.UUID(session_id))
 
     if not session or session.review_scope.project_id != project.id:
-        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302,
+                                headers=htmx_toast("Session not found.", "error"))
 
     review_scope = session.review_scope
 
     # Verify review scope belongs to this project
     if str(review_scope.id) != review_scope_id or review_scope.project_id != project.id:
-        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+        return RedirectResponse(url=f"/projects/{project_id}", status_code=302,
+                                headers=htmx_toast("Session not found.", "error"))
 
     # Load control instances
     control_instances = hc_repo.get_control_instances_for_session(session_id)
@@ -952,13 +957,15 @@ async def get_control_panel(
     instance = hc_repo.get_control_instance_with_observations(uuid.UUID(instance_id))
 
     if not instance or instance.audit_session.project_id != project.id:
-        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+        return HTMLResponse("", status_code=204,
+                            headers=htmx_toast("Control not found.", "error"))
 
     session = instance.audit_session
     review_scope = session.review_scope
 
     if str(session.id) != session_id or str(session.review_scope_id) != review_scope_id:
-        return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
+        return HTMLResponse("", status_code=204,
+                            headers=htmx_toast("Control not found.", "error"))
 
     return templates.TemplateResponse(
         "projects/health_check/_control_panel.html",
@@ -2111,10 +2118,12 @@ async def detail_project(
     project = repo.get_by_id_with_details(user.tenant_id, project_id)
 
     if not project:
-        return RedirectResponse(url="/projects", status_code=302)
+        return RedirectResponse(url="/projects", status_code=302,
+                                headers=htmx_toast("Project not found.", "error"))
 
     if not can_access_project(user, project):
-        return RedirectResponse(url="/projects", status_code=302)
+        return RedirectResponse(url="/projects", status_code=302,
+                                headers=htmx_toast("You don't have access to that project.", "error"))
 
     # Fork: PCI DSS Health Check projects show the health check overview
     if project.project_type == ProjectType.PCI_DSS_HEALTH_CHECK:

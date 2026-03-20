@@ -1,9 +1,10 @@
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import HTTPException
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
 from app.config import get_settings
 from app.logging_config import configure_logging
 from app.middleware.auth import AuthMiddleware
@@ -11,6 +12,8 @@ from app.middleware.request_logging import RequestLoggingMiddleware
 from app.middleware.tenant import TenantMiddleware
 from app.routes import auth, dashboard, clients, frameworks, projects, admin
 from app.routes import admin_users
+from app.templates import templates
+from app.utils.htmx import htmx_toast, is_htmx_request
 
 settings = get_settings()
 configure_logging(settings)
@@ -58,6 +61,39 @@ def create_app() -> FastAPI:
     @app.get("/")
     def root():
         return RedirectResponse(url="/auth/login")
+
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(request: Request, exc: HTTPException):
+        if is_htmx_request(request):
+            status_to_msg = {
+                401: "You must be logged in to do that.",
+                403: "You don't have permission to do that.",
+                404: "The requested resource was not found.",
+            }
+            msg = status_to_msg.get(exc.status_code, f"Error {exc.status_code}.")
+            return HTMLResponse("", status_code=204, headers=htmx_toast(msg, "error"))
+
+        template_map = {403: "errors/403.html", 404: "errors/404.html"}
+        template_name = template_map.get(exc.status_code, "errors/500.html")
+        return templates.TemplateResponse(
+            template_name,
+            {"request": request, "status_code": exc.status_code, "detail": exc.detail},
+            status_code=exc.status_code,
+        )
+
+    @app.exception_handler(Exception)
+    async def unhandled_exception_handler(request: Request, exc: Exception):
+        APP_LOGGER.exception("unhandled_exception path=%s", request.url.path)
+        if is_htmx_request(request):
+            return HTMLResponse(
+                "", status_code=204,
+                headers=htmx_toast("An unexpected error occurred. Please try again.", "error"),
+            )
+        return templates.TemplateResponse(
+            "errors/500.html",
+            {"request": request, "status_code": 500, "detail": "Internal server error"},
+            status_code=500,
+        )
 
     return app
 

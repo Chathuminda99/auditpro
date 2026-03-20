@@ -78,10 +78,11 @@
   <span class="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mx-auto block mb-3">folder_open</span>
   <h3 class="text-lg font-semibold text-slate-900 dark:text-white mb-1">No review scopes yet</h3>
   <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Add review scopes to start your health check assessment.</p>
-  <button hx-get="/projects/{{ project.id }}/review-scopes/add" hx-target="#modal-body" @click="document.getElementById('modal-body').innerHTML = ''; $store.modal.show()"
-    class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:opacity-90">
-    <span class="material-symbols-outlined text-[16px]">add</span>
-    Add Review Scope
-  </button>
+  {% set ihb_text = "Add Review Scope" %}
+  {% set ihb_class = "w-48" %}
+  {% set ihb_hx = 'hx-get="/projects/' ~ project.id ~ '/review-scopes/add" hx-target="#modal-body" @click="document.getElementById(\'modal-body\').innerHTML = \'\'; $store.modal.show()"' %}
+  {% include "components/interactive_hover_button.html" %}
+  {% set ihb_hx = "" %}
+  {% set ihb_class = "" %}
 </div>
 {% endif %}

@@ -1,0 +1,96 @@
+{# Interactive Hover Button Component #}
+{# Usage:
+   {% set ihb_text = "Get Started" %}
+   {% include "components/interactive_hover_button.html" %}
+
+   Parameters:
+     ihb_text     — button label (default: "Button")
+     ihb_class    — extra Tailwind classes (e.g. "w-44")
+     ihb_href     — if set, renders as <a> tag instead of <button>
+     ihb_type     — button type attribute (default: "button")
+     ihb_id       — id attribute
+     ihb_disabled — disables the button
+     ihb_hx       — raw attribute string for HTMX/Alpine (e.g. 'hx-post="/foo" hx-target="#bar"')
+#}
+
+<style>
+  .ihb-blob {
+    position: absolute;
+    left: -1rem;
+    top: 50%;
+    height: 0.5rem;
+    width: 0.5rem;
+    border-radius: 0.5rem;
+    background-color: hsl(var(--primary));
+    transition: left 300ms, top 300ms, height 300ms, width 300ms, transform 300ms;
+    transform: translateY(-50%) scale(1);
+    z-index: 0;
+  }
+  .ihb-btn:hover .ihb-blob {
+    left: 0%;
+    top: 0%;
+    height: 100%;
+    width: 100%;
+    transform: translateY(0) scale(1.8);
+    border-radius: 0.5rem;
+  }
+  .ihb-label {
+    display: inline-block;
+    transform: translateX(0.25rem);
+    transition: transform 300ms, opacity 300ms;
+    position: relative;
+    z-index: 10;
+  }
+  .ihb-btn:hover .ihb-label {
+    transform: translateX(3rem);
+    opacity: 0;
+  }
+  .ihb-hover-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    display: flex;
+    height: 100%;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: hsl(var(--primary-foreground));
+    opacity: 0;
+    transform: translateX(3rem);
+    transition: transform 300ms, opacity 300ms;
+  }
+  .ihb-btn:hover .ihb-hover-label {
+    transform: translateX(-0.25rem);
+    opacity: 1;
+  }
+</style>
+
+{% if ihb_href %}
+<a
+  href="{{ ihb_href }}"
+  {% if ihb_id %}id="{{ ihb_id }}"{% endif %}
+  {% if ihb_hx %}{{ ihb_hx }}{% endif %}
+  class="ihb-btn inline-block relative w-32 cursor-pointer overflow-hidden rounded-full border border-input bg-background p-2 text-center font-semibold text-sm {{ ihb_class if ihb_class else '' }}"
+>
+{% else %}
+<button
+  type="{{ ihb_type if ihb_type else 'button' }}"
+  {% if ihb_id %}id="{{ ihb_id }}"{% endif %}
+  {% if ihb_disabled %}disabled{% endif %}
+  {% if ihb_hx %}{{ ihb_hx }}{% endif %}
+  class="ihb-btn relative w-32 cursor-pointer overflow-hidden rounded-full border border-input bg-background p-2 text-center font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed {{ ihb_class if ihb_class else '' }}"
+>
+{% endif %}
+  <span class="ihb-label">{{ ihb_text if ihb_text else "Button" }}</span>
+
+  <div class="ihb-hover-label">
+    <span>{{ ihb_text if ihb_text else "Button" }}</span>
+    <svg xmlns="http://www.w3.org/2000/svg" style="height:1rem;width:1rem;flex-shrink:0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+    </svg>
+  </div>
+
+  <div class="ihb-blob"></div>
+{% if ihb_href %}</a>{% else %}</button>{% endif %}

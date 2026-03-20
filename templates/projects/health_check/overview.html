@@ -125,11 +125,12 @@
   <div class="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
     <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
       <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Review Scopes</h2>
-      <button hx-get="/projects/{{ project.id }}/review-scopes/add" hx-target="#modal-body" @click="document.getElementById('modal-body').innerHTML = ''; $store.modal.show()"
-        class="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors bg-primary text-white hover:opacity-90">
-        <span class="material-symbols-outlined text-[16px]">add</span>
-        Add Review Scope
-      </button>
+      {% set ihb_text = "Add Review Scope" %}
+      {% set ihb_class = "w-48" %}
+      {% set ihb_hx = 'hx-get="/projects/' ~ project.id ~ '/review-scopes/add" hx-target="#modal-body" @click="document.getElementById(\'modal-body\').innerHTML = \'\'; $store.modal.show()"' %}
+      {% include "components/interactive_hover_button.html" %}
+      {% set ihb_hx = "" %}
+      {% set ihb_class = "" %}
     </div>
 
     <div id="review-scopes-grid" class="p-6">
