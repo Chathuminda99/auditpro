@@ -40,8 +40,8 @@
                 <span class="material-symbols-outlined text-[16px] text-primary">lightbulb</span>
                 Recommendation
               </label>
-              <textarea id="recommendation-{{ control.id }}" name="recommendation" rows="3"
-                data-rich-text="true" data-rich-text-min-height="10rem"
+              <textarea id="recommendation-{{ control.id }}" name="recommendation" rows="2"
+                data-rich-text="true" data-rich-text-min-height="7.5rem"
                 class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-lg hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors sm:text-sm"
                 placeholder="How should this be addressed?">{{ response.recommendation if response else "" }}</textarea>
             </div>
@@ -65,8 +65,8 @@
               <span class="material-symbols-outlined text-[16px] text-primary">description</span>
               Evidence / Response
             </label>
-            <textarea id="response-text-{{ control.id }}" name="response_text" rows="3"
-              data-rich-text="true" data-rich-text-min-height="12rem"
+            <textarea id="response-text-{{ control.id }}" name="response_text" rows="6"
+              data-rich-text="true" data-rich-text-min-height="24rem" data-rich-text-image="true"
               class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-lg hover:border-slate-300 dark:hover:border-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors sm:text-sm"
               placeholder="How does your organization address this control?">{{ response.response_text if response else "" }}</textarea>
           </div>
@@ -80,7 +80,7 @@
                 open: false,
                 value: "{{ response.status.value if response else "not_started" }}",
                 labels: {"not_started": "Not Started", "draft": "Draft", "complied": "Complied", "not_complied": "Not Complied"}
-            }' @click.outside="open = false" class="relative max-w-xs">
+            }' @click.outside="open = false" @draftrestore="if ($event.detail.name === 'status') value = $event.detail.value" class="relative max-w-xs">
               <input type="hidden" name="status" :value="value" />
               <button type="button" @click="open = !open" class="dropdown-select">
                 <span x-text="labels[value]" class="truncate flex-1 text-slate-700 dark:text-slate-300"></span>

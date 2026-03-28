@@ -306,6 +306,19 @@ class HealthCheckRepository(BaseRepository[ReviewScope]):
         self.db.refresh(obs, ["evidence_files"])
         return obs
 
+    def update_observation(self, observation_id: UUID, observation_text: str | None, recommendation_text: str | None) -> bool:
+        """Update observation text and recommendation."""
+        obs = self.db.query(SessionControlObservation).filter(
+            SessionControlObservation.id == observation_id
+        ).first()
+        if not obs:
+            return False
+        if observation_text:
+            obs.observation_text = observation_text
+        obs.recommendation_text = sanitize_rich_text(recommendation_text)
+        self.db.commit()
+        return True
+
     def update_observation_recommendation(self, observation_id: UUID, recommendation_text: str | None) -> bool:
         """Update the recommendation text of an existing observation."""
         obs = self.db.query(SessionControlObservation).filter(

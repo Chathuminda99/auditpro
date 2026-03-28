@@ -8,6 +8,55 @@
         { command: "clear", icon: "format_clear", label: "Clear Formatting" },
     ];
 
+    const IMAGE_BUTTON = {
+        icon: "attach_file",
+        label: "Attach Image",
+        customHandler: function (editor, textarea) {
+            let fileInput = textarea.__richTextFileInput;
+            if (!fileInput) {
+                fileInput = document.createElement("input");
+                fileInput.type = "file";
+                fileInput.accept = "image/*";
+                fileInput.style.display = "none";
+                document.body.appendChild(fileInput);
+                textarea.__richTextFileInput = fileInput;
+
+                fileInput.addEventListener("change", function () {
+                    const file = fileInput.files && fileInput.files[0];
+                    if (!file) {
+                        return;
+                    }
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        editor.focus();
+                        const img = document.createElement("img");
+                        img.src = e.target.result;
+                        img.style.maxWidth = "100%";
+                        img.style.height = "auto";
+                        img.style.borderRadius = "0.375rem";
+                        img.style.margin = "0.25rem 0";
+                        const sel = window.getSelection();
+                        if (sel && sel.rangeCount > 0) {
+                            const range = sel.getRangeAt(0);
+                            range.deleteContents();
+                            range.insertNode(img);
+                            range.setStartAfter(img);
+                            range.collapse(true);
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                        } else {
+                            editor.appendChild(img);
+                        }
+                        syncEditor(textarea, editor);
+                    };
+                    reader.readAsDataURL(file);
+                    fileInput.value = "";
+                });
+            }
+            fileInput.click();
+        },
+    };
+
     function escapeHtml(value) {
         return value
             .replace(/&/g, "&amp;")
@@ -43,7 +92,8 @@
 
     function normalizeEditorValue(editor) {
         const text = editor.textContent.replace(/\u00a0/g, " ").trim();
-        if (!text) {
+        const hasImages = editor.querySelectorAll("img").length > 0;
+        if (!text && !hasImages) {
             return "";
         }
 
@@ -95,11 +145,34 @@
             button.title = buttonConfig.label;
             button.setAttribute("aria-label", buttonConfig.label);
             button.innerHTML = `<span class="material-symbols-outlined text-[18px]">${buttonConfig.icon}</span>`;
-            button.addEventListener("click", function () {
-                executeCommand(buttonConfig.command, editor, textarea);
-            });
+            if (buttonConfig.customHandler) {
+                button.addEventListener("click", function () {
+                    buttonConfig.customHandler(editor, textarea);
+                });
+            } else {
+                button.addEventListener("click", function () {
+                    executeCommand(buttonConfig.command, editor, textarea);
+                });
+            }
             toolbar.appendChild(button);
         });
+
+        if (textarea.dataset.richTextImage === "true") {
+            const sep = document.createElement("div");
+            sep.className = "w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1";
+            toolbar.appendChild(sep);
+
+            const imgButton = document.createElement("button");
+            imgButton.type = "button";
+            imgButton.className = "inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-white hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/30 dark:text-slate-300 dark:hover:bg-slate-800";
+            imgButton.title = IMAGE_BUTTON.label;
+            imgButton.setAttribute("aria-label", IMAGE_BUTTON.label);
+            imgButton.innerHTML = `<span class="material-symbols-outlined text-[18px]">${IMAGE_BUTTON.icon}</span>`;
+            imgButton.addEventListener("click", function () {
+                IMAGE_BUTTON.customHandler(editor, textarea);
+            });
+            toolbar.appendChild(imgButton);
+        }
 
         return toolbar;
     }
@@ -135,6 +208,44 @@
             syncEditor(textarea, editor);
         });
         editor.addEventListener("paste", function (event) {
+            if (textarea.dataset.richTextImage === "true") {
+                const items = event.clipboardData && event.clipboardData.items;
+                if (items) {
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf("image") !== -1) {
+                            event.preventDefault();
+                            const file = items[i].getAsFile();
+                            if (!file) {
+                                return;
+                            }
+                            const reader = new FileReader();
+                            reader.onload = function (e) {
+                                const img = document.createElement("img");
+                                img.src = e.target.result;
+                                img.style.maxWidth = "100%";
+                                img.style.height = "auto";
+                                img.style.borderRadius = "0.375rem";
+                                img.style.margin = "0.25rem 0";
+                                const sel = window.getSelection();
+                                if (sel && sel.rangeCount > 0) {
+                                    const range = sel.getRangeAt(0);
+                                    range.deleteContents();
+                                    range.insertNode(img);
+                                    range.setStartAfter(img);
+                                    range.collapse(true);
+                                    sel.removeAllRanges();
+                                    sel.addRange(range);
+                                } else {
+                                    editor.appendChild(img);
+                                }
+                                syncEditor(textarea, editor);
+                            };
+                            reader.readAsDataURL(file);
+                            return;
+                        }
+                    }
+                }
+            }
             event.preventDefault();
             const text = (event.clipboardData || window.clipboardData).getData("text/plain");
             document.execCommand("insertText", false, text);

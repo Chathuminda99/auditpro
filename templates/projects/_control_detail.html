@@ -251,12 +251,20 @@
                                     <span class="material-symbols-outlined text-primary">assignment_turned_in</span>
                                     <h3 class="font-bold text-slate-900 dark:text-white">Observations</h3>
                                 </div>
-                                <button type="button"
-                                    class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 flex items-center gap-2"
-                                    onclick="document.getElementById('observation-dropdown-{{ control.id }}').classList.toggle('hidden')">
-                                    <span class="material-symbols-outlined text-[14px]">add</span>
-                                    Add Observation
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button type="button"
+                                        class="px-4 py-2 text-sm font-bold text-white bg-primary hover:bg-primary/90 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 flex items-center gap-2"
+                                        onclick="document.getElementById('observation-dropdown-{{ control.id }}').classList.toggle('hidden')">
+                                        <span class="material-symbols-outlined text-[14px]">add</span>
+                                        Add Observation
+                                    </button>
+                                    <button type="button"
+                                        class="px-4 py-2 text-sm font-bold text-primary bg-primary/10 hover:bg-primary/20 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary/50 flex items-center gap-2"
+                                        onclick="addCustomObservation('{{ control.id }}')">
+                                        <span class="material-symbols-outlined text-[14px]">add_comment</span>
+                                        Custom
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Dropdown to select predefined observations -->
@@ -360,29 +368,7 @@
                                 </thead>
                                 <tbody id="observations-tbody-{{ control.id }}">
                                     {% for obs in observations %}
-                                    <tr class="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
-                                        data-obs-id="{{ obs.id }}">
-                                        <td class="px-6 py-4 text-sm text-slate-900 dark:text-white break-words">{{
-                                            obs.observation_text }}</td>
-                                        <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300 break-words">{{
-                                            obs.recommendation_text }}</td>
-                                        <td class="px-6 py-4 text-sm">
-                                            <button type="button"
-                                                hx-get="/projects/{{ project.id }}/observations/{{ obs.id }}/evidence"
-                                                hx-target="#modal-body" hx-swap="innerHTML" @click="$store.modal.show()"
-                                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors cursor-pointer">
-                                                <span class="material-symbols-outlined text-[12px]">attach_file</span>
-                                                {{ obs.evidence_files|length }} file{{ 's' if obs.evidence_files|length
-                                                != 1 else '' }}
-                                            </button>
-                                        </td>
-                                        <td class="px-6 py-4 text-center">
-                                            <button type="button" @click="deleteObservation('{{ obs.id }}')"
-                                                class="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors">
-                                                <span class="material-symbols-outlined">delete</span>
-                                            </button>
-                                        </td>
-                                    </tr>
+                                    {% include "projects/_observation_row.html" %}
                                     {% else %}
                                     <tr id="empty-obs-{{ control.id }}">
                                         <td colspan="4" class="p-4 w-full">
@@ -567,6 +553,40 @@ function addObservation(observationId, controlId, label, recommendation) {
         }
     }
 
+    function addCustomObservation(controlId) {
+        const tbody = document.getElementById(`observations-tbody-${controlId}`);
+        const emptyRow = document.getElementById(`empty-obs-${controlId}`);
+        if (emptyRow) emptyRow.remove();
+
+        const newId = 'new_' + Date.now();
+        const newRow = document.createElement('tr');
+        newRow.className = 'border-b border-slate-100 dark:border-slate-700 bg-primary/5 dark:bg-primary/10 transition-colors';
+        newRow.setAttribute('data-obs-id', newId);
+        newRow.setAttribute('data-custom', 'true');
+        newRow.innerHTML = `
+            <td class="px-4 py-3 text-sm align-top">
+                <textarea name="obs_text_input" rows="2" placeholder="Enter observation..."
+                    class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y"></textarea>
+            </td>
+            <td class="px-4 py-3 text-sm align-top">
+                <textarea name="rec_text_input" rows="2" placeholder="Enter recommendation..."
+                    class="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y"></textarea>
+            </td>
+            <td class="px-4 py-3 text-sm" data-evidence-cell="true">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500">
+                    <span class="material-symbols-outlined" style="font-size:12px">attach_file</span>
+                    Save to add evidence
+                </span>
+            </td>
+            <td class="px-4 py-3 text-center align-top">
+                <button type="button" class="text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition-colors" onclick="deleteObservationRow('${newId}', '${controlId}')">
+                    <span class="material-symbols-outlined">delete</span>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(newRow);
+    }
+
     function prepareObservationsData() {
         const form = document.getElementById('control-form');
         // Remove any previously prepared hidden inputs
@@ -586,8 +606,17 @@ function addObservation(observationId, controlId, label, recommendation) {
             const obsId = row.getAttribute('data-obs-id');
             if (!obsId || !obsId.startsWith('new_')) return;
             const cells = row.querySelectorAll('td');
-            addInput(`observation_${idx}_text`, cells[0]?.textContent?.trim() || '');
-            addInput(`observation_${idx}_recommendation`, cells[1]?.textContent?.trim() || '');
+            if (row.getAttribute('data-custom') === 'true') {
+                // Custom observation: read from textarea inputs
+                const obsText = row.querySelector('textarea[name="obs_text_input"]')?.value?.trim() || '';
+                const recText = row.querySelector('textarea[name="rec_text_input"]')?.value?.trim() || '';
+                if (!obsText) return;
+                addInput(`observation_${idx}_text`, obsText);
+                addInput(`observation_${idx}_recommendation`, recText);
+            } else {
+                addInput(`observation_${idx}_text`, cells[0]?.textContent?.trim() || '');
+                addInput(`observation_${idx}_recommendation`, cells[1]?.textContent?.trim() || '');
+            }
             addInput(`observation_${idx}_is_new`, 'true');
             idx++;
         });

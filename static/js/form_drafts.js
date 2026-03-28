@@ -1,7 +1,7 @@
 (function () {
     const STORAGE_PREFIX = "themis:draft:";
     const PENDING_CLEAR_KEY = "themis:draft:pending-clear";
-    const FIELD_SELECTOR = "textarea, input[type='text'], input[type='search'], input[type='email'], input[type='url'], input[type='tel'], input[type='number']";
+    const FIELD_SELECTOR = "textarea, input[type='text'], input[type='search'], input[type='email'], input[type='url'], input[type='tel'], input[type='number'], input[type='hidden'][name]";
     const SAVE_DELAY_MS = 400;
     const SERVER_AUTOSAVE_INTERVAL_MS = 3 * 60 * 1000;
     const SERVER_DRAFT_LOAD_ENDPOINT = "/projects/drafts";
@@ -143,6 +143,12 @@
             refreshRichTextField(field);
         }
         field.dispatchEvent(new Event("input", { bubbles: true }));
+        if (field.type === "hidden") {
+            field.dispatchEvent(new CustomEvent("draftrestore", {
+                bubbles: true,
+                detail: { name: key, value: nextValue },
+            }));
+        }
         return true;
     }
 

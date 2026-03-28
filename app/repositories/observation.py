@@ -44,6 +44,23 @@ class ProjectObservationRepository(BaseRepository[ProjectObservation]):
         self.db.commit()
         return observation
 
+    def update_observation(
+        self,
+        observation_id: uuid.UUID,
+        observation_text: str,
+        recommendation_text: str,
+    ) -> ProjectObservation | None:
+        """Update observation text and recommendation."""
+        observation = self.db.query(ProjectObservation).filter(
+            ProjectObservation.id == observation_id
+        ).first()
+        if observation:
+            observation.observation_text = observation_text
+            observation.recommendation_text = recommendation_text
+            self.db.commit()
+            self.db.refresh(observation)
+        return observation
+
     def delete_observation(self, observation_id: uuid.UUID) -> bool:
         """Delete an observation and its evidence files."""
         observation = self.db.query(ProjectObservation).filter(

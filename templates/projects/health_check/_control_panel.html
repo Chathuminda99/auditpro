@@ -296,6 +296,7 @@
 
     <!-- Form Controls -->
     <div class="space-y-6">
+
         {% set obs_list = [] %}
         {% if instance.assessment_checklist_snapshot and instance.assessment_checklist_snapshot.observations %}
         {% for obs in instance.assessment_checklist_snapshot.observations %}
@@ -323,6 +324,19 @@
                             },
                             removeNewObs(id) {
                                 this.newObs = this.newObs.filter(o => o.id !== id);
+                            },
+                            addCustomObs() {
+                                this.newObs.push({
+                                    id: "new_" + Date.now(),
+                                    label: "",
+                                    recommendation: "",
+                                    note: "",
+                                    custom: true
+                                });
+                                const statusState = window["statusState_{{ instance.id }}"];
+                                if (statusState && statusState.value === "not_started") {
+                                    statusState.value = "draft";
+                                }
                             },
                             init() {
                                 window["obsState_{{ instance.id }}"] = this;
@@ -367,7 +381,14 @@
                                         <span class="material-symbols-outlined text-primary text-[16px]">assignment_turned_in</span>
                                         <h3 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Observations</h3>
                                     </div>
-                                    <span class="text-xs text-slate-400 dark:text-slate-500">Click to add</span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs text-slate-400 dark:text-slate-500">Click to add</span>
+                                        <button type="button" @click.stop="addCustomObs()"
+                                            class="text-xs font-bold text-primary hover:bg-primary/10 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-[14px]">add_comment</span>
+                                            Custom
+                                        </button>
+                                    </div>
                                 </div>
                                 <template x-if="availableObs.length > 0">
                                     <div class="divide-y divide-slate-50 dark:divide-slate-800/60 max-h-52 overflow-y-auto">
@@ -435,13 +456,20 @@
                                     <!-- Expanded Content -->
                                     <template x-if="expanded">
                                         <div class="border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 p-4 space-y-4">
+                                            <!-- Observation Text (editable) -->
+                                            <div>
+                                                <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-2">Observation Text</label>
+                                                <textarea class="obs-observation-text w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-y transition-colors"
+                                                    data-draft-name="observation_text_{{ obs.id }}"
+                                                    rows="2" placeholder="Observation text...">{{ obs.observation_text or '' }}</textarea>
+                                            </div>
                                             <!-- Recommendation -->
                                             <div>
                                                 <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-2">Recommendation</label>
                                                 <textarea class="obs-recommendation w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
-                                                    data-rich-text="true" data-rich-text-min-height="10rem"
+                                                    data-rich-text="true" data-rich-text-min-height="7.5rem" data-rich-text-image="true"
                                                     data-draft-name="observation_recommendation_{{ obs.id }}"
-                                                    rows="5" placeholder="Add recommendation...">{{ obs.recommendation_text or '' }}</textarea>
+                                                    rows="3" placeholder="Add recommendation...">{{ obs.recommendation_text or '' }}</textarea>
                                             </div>
 
                                             <!-- Evidence Section -->
@@ -471,14 +499,18 @@
 
                                                     <!-- Quick Add Text Note -->
                                                     <form hx-post="/projects/{{ project.id }}/review-scopes/{{ review_scope.id }}/sessions/{{ session.id }}/observations/{{ obs.id }}/evidence/text"
-                                                        hx-target="#control-panel" hx-swap="innerHTML" class="flex gap-2">
-                                                        <input type="text" name="content" placeholder="Add quick note..."
-                                                            class="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors">
-                                                        <button type="submit"
-                                                            class="px-3 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors flex items-center gap-1">
-                                                            <span class="material-symbols-outlined text-[16px]">add</span>
-                                                            Note
-                                                        </button>
+                                                        hx-target="#control-panel" hx-swap="innerHTML" class="space-y-2">
+                                                        <textarea name="content" rows="3"
+                                                            data-rich-text="true" data-rich-text-min-height="6rem" data-rich-text-image="true"
+                                                            class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
+                                                            placeholder="Add note..."></textarea>
+                                                        <div class="flex justify-end">
+                                                            <button type="submit"
+                                                                class="px-3 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors flex items-center gap-1">
+                                                                <span class="material-symbols-outlined text-[16px]">add</span>
+                                                                Note
+                                                            </button>
+                                                        </div>
                                                     </form>
 
                                                     <!-- File Evidence -->
@@ -553,7 +585,14 @@
                                             <div class="flex items-start gap-3 flex-1">
                                                 <span class="material-symbols-outlined text-amber-500 flex-shrink-0 mt-0.5">edit_note</span>
                                                 <div class="flex-1">
-                                                    <p class="text-sm font-semibold text-slate-900 dark:text-white" x-text="obs.label"></p>
+                                                    <template x-if="!obs.custom">
+                                                        <p class="text-sm font-semibold text-slate-900 dark:text-white" x-text="obs.label"></p>
+                                                    </template>
+                                                    <template x-if="obs.custom">
+                                                        <input type="text" x-model="obs.label" placeholder="Enter observation text..."
+                                                            @click.stop
+                                                            class="w-full bg-transparent border-b border-amber-300 dark:border-amber-600 text-sm font-semibold text-slate-900 dark:text-white placeholder-amber-500/60 focus:outline-none focus:border-primary pb-0.5">
+                                                    </template>
                                                     <p class="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 font-medium">Not yet saved — will be added on save</p>
                                                 </div>
                                             </div>
@@ -571,9 +610,9 @@
                                                     <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block mb-2">Recommendation</label>
                                                     <textarea x-model="obs.recommendation"
                                                         class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none transition-colors"
-                                                        data-rich-text="true" data-rich-text-min-height="10rem"
+                                                        data-rich-text="true" data-rich-text-min-height="7.5rem" data-rich-text-image="true"
                                                         :data-draft-name="'new_observation_recommendation_' + obs.id"
-                                                        rows="5" placeholder="Edit recommendation..."></textarea>
+                                                        rows="3" placeholder="Edit recommendation..."></textarea>
                                                 </div>
 
                                                 <!-- Text Note -->
@@ -740,13 +779,15 @@
 
         let idx = 0;
 
-        // Collect recommendation updates for existing saved observations
+        // Collect observation text and recommendation updates for existing saved observations
         form.querySelectorAll('[data-obs-saved="true"]').forEach(row => {
             const obsId = row.getAttribute('data-obs-id');
             if (!obsId) return;
             const rec = row.querySelector('.obs-recommendation')?.value?.trim() || '';
+            const obsText = row.querySelector('.obs-observation-text')?.value?.trim() || '';
             addInput(`observation_${idx}_id`, obsId);
             addInput(`observation_${idx}_recommendation`, rec);
+            addInput(`observation_${idx}_obs_text`, obsText);
             addInput(`observation_${idx}_is_new`, 'false');
             idx++;
         });

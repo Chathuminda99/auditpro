@@ -1304,8 +1304,9 @@ async def update_control_with_observations(
         elif obs_is_new == "false":
             obs_id_str = form_data.get(f"observation_{idx}_id")
             obs_rec = form_data.get(f"observation_{idx}_recommendation", "").strip() or None
+            obs_text = form_data.get(f"observation_{idx}_obs_text", "").strip() or None
             if obs_id_str:
-                hc_repo.update_observation_recommendation(uuid.UUID(obs_id_str), obs_rec)
+                hc_repo.update_observation(uuid.UUID(obs_id_str), obs_text, obs_rec)
         idx += 1
 
     # Reload instance with updated observations
@@ -2645,6 +2646,92 @@ async def delete_evidence(
         {"request": request, "observation": observation, "project_id": project_id},
     )
 
+
+
+# ---------------------------------------------------------------------------
+# Observation inline-edit row endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/{project_id}/observations/{observation_id}/row", response_class=HTMLResponse)
+async def get_observation_row(
+    project_id: str, observation_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Return read-only observation row partial."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    from app.repositories.observation import ProjectObservationRepository
+    obs_repo = ProjectObservationRepository(db)
+    obs = obs_repo.get_observation(uuid.UUID(observation_id))
+    if not obs:
+        return HTMLResponse(content="", status_code=200)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    return templates.TemplateResponse(
+        request,
+        "projects/_observation_row.html",
+        {"request": request, "obs": obs, "project": project},
+    )
+
+
+@router.get("/{project_id}/observations/{observation_id}/row/edit", response_class=HTMLResponse)
+async def get_observation_edit_row(
+    project_id: str, observation_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Return editable observation row partial."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    from app.repositories.observation import ProjectObservationRepository
+    obs_repo = ProjectObservationRepository(db)
+    obs = obs_repo.get_observation(uuid.UUID(observation_id))
+    if not obs:
+        return HTMLResponse(content="", status_code=200)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    return templates.TemplateResponse(
+        request,
+        "projects/_observation_edit_row.html",
+        {"request": request, "obs": obs, "project": project},
+    )
+
+
+@router.post("/{project_id}/observations/{observation_id}/update", response_class=HTMLResponse)
+async def update_observation_row(
+    project_id: str, observation_id: str, request: Request, db: Session = Depends(get_db)
+):
+    """Update observation text and return read-only row partial."""
+    user = getattr(request.state, "user", None)
+    if not user:
+        return RedirectResponse(url="/auth/login", status_code=302)
+
+    form_data = await request.form()
+    observation_text = form_data.get("observation_text", "").strip()
+    recommendation_text = form_data.get("recommendation_text", "").strip()
+
+    from app.repositories.observation import ProjectObservationRepository
+    obs_repo = ProjectObservationRepository(db)
+    obs = obs_repo.update_observation(
+        uuid.UUID(observation_id), observation_text, recommendation_text
+    )
+    if not obs:
+        return HTMLResponse(content="Observation not found", status_code=404)
+
+    repo = ProjectRepository(db)
+    project = repo.get_by_id_with_details(user.tenant_id, project_id)
+
+    return templates.TemplateResponse(
+        request,
+        "projects/_observation_row.html",
+        {"request": request, "obs": obs, "project": project},
+        headers=htmx_toast("Observation updated"),
+    )
 
 
 # ---------------------------------------------------------------------------
