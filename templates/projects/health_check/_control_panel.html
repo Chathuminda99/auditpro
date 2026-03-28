@@ -104,7 +104,7 @@
     <div class="grid grid-cols-1 gap-4 mt-6">
         {% if instance.requirements_text_snapshot %}
         <div x-data="{ open: true }"
-            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-hidden">
+            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-amber-50/50 dark:bg-amber-950/20 shadow-sm relative overflow-hidden">
             <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
             <button type="button" @click="open = !open"
                 class="w-full flex items-center justify-between px-5 py-2.5 text-left hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
@@ -134,7 +134,7 @@
         </div>
         {% else %}
         <div
-            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-hidden">
+            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-amber-50/50 dark:bg-amber-950/20 shadow-sm relative overflow-hidden">
             <div class="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
             <div class="px-5 py-4">
                 <h4
@@ -152,7 +152,7 @@
 
         {% if instance.testing_procedures_text_snapshot %}
         <div x-data="{ open: true }"
-            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-hidden">
+            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-blue-50/50 dark:bg-blue-950/20 shadow-sm relative overflow-hidden">
             <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
             <button type="button" @click="open = !open"
                 class="w-full flex items-center justify-between px-5 py-2.5 text-left hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
@@ -182,7 +182,7 @@
         </div>
         {% else %}
         <div
-            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm relative overflow-hidden">
+            class="rounded-xl border border-slate-200 dark:border-slate-800 bg-blue-50/50 dark:bg-blue-950/20 shadow-sm relative overflow-hidden">
             <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
             <div class="px-5 py-4">
                 <h4
@@ -204,7 +204,7 @@
 {% if instance.check_points_text_snapshot %}
 <div class="sticky top-4 z-20 mt-6 mb-6">
     <div x-data="{ open: false }"
-        class="rounded-xl border border-purple-200 dark:border-purple-800/60 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md shadow-lg shadow-purple-100/60 dark:shadow-purple-900/20 relative overflow-hidden">
+        class="rounded-xl border border-purple-200 dark:border-purple-800/60 bg-purple-50/80 dark:bg-purple-950/20 backdrop-blur-md shadow-lg shadow-purple-100/60 dark:shadow-purple-900/20 relative overflow-hidden">
         <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
         <button type="button" @click="open = !open"
             class="w-full flex items-center justify-between px-5 py-2.5 text-left hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-colors">
