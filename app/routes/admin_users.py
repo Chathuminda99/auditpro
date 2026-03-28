@@ -34,11 +34,13 @@ async def list_users(request: Request, db: Session = Depends(get_db)):
     is_htmx = request.headers.get("HX-Request") == "true"
     if is_htmx:
         return templates.TemplateResponse(
+            request,
             "admin/_users_table.html",
             {"request": request, "user": user, "users": users},
         )
 
     return templates.TemplateResponse(
+        request,
         "admin/users.html",
         {"request": request, "user": user, "users": users},
     )
@@ -55,6 +57,7 @@ async def search_users(request: Request, db: Session = Depends(get_db), q: str =
     results = repo.search(user.tenant_id, q) if q.strip() else []
 
     return templates.TemplateResponse(
+        request,
         "admin/_users_search_results.html",
         {"request": request, "user": user, "results": results},
     )
@@ -70,6 +73,7 @@ async def new_user_form(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/dashboard", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "admin/_user_form.html",
         {"request": request, "user": user, "edit_user": None},
     )
@@ -92,6 +96,7 @@ async def create_user(request: Request, db: Session = Depends(get_db)):
 
     if not email or not full_name or not password:
         return templates.TemplateResponse(
+            request,
             "admin/_user_form.html",
             {
                 "request": request,
@@ -112,6 +117,7 @@ async def create_user(request: Request, db: Session = Depends(get_db)):
     existing = repo.get_by_email(email)
     if existing:
         return templates.TemplateResponse(
+            request,
             "admin/_user_form.html",
             {
                 "request": request,
@@ -131,6 +137,7 @@ async def create_user(request: Request, db: Session = Depends(get_db)):
 
     users = repo.get_all(user.tenant_id)
     return templates.TemplateResponse(
+        request,
         "admin/_users_table.html",
         {"request": request, "user": user, "users": users},
         headers=htmx_toast("User created successfully"),
@@ -152,6 +159,7 @@ async def edit_user_form(user_id: str, request: Request, db: Session = Depends(g
         return RedirectResponse(url="/admin/users", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "admin/_user_form.html",
         {"request": request, "user": user, "edit_user": edit_user},
     )
@@ -171,6 +179,7 @@ async def approve_user(user_id: str, request: Request, db: Session = Depends(get
 
     users = repo.get_all(user.tenant_id)
     return templates.TemplateResponse(
+        request,
         "admin/_users_table.html",
         {"request": request, "user": user, "users": users},
         headers=htmx_toast("User approved"),
@@ -211,6 +220,7 @@ async def update_user(user_id: str, request: Request, db: Session = Depends(get_
 
     users = repo.get_all(user.tenant_id)
     return templates.TemplateResponse(
+        request,
         "admin/_users_table.html",
         {"request": request, "user": user, "users": users},
         headers=htmx_toast("User updated successfully"),

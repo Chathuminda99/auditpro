@@ -99,6 +99,7 @@ async def list_projects(
     if is_htmx:
         # Return just the table rows
         return templates.TemplateResponse(
+            request,
             "projects/_projects_table.html",
             {
                 "request": request,
@@ -128,6 +129,7 @@ async def list_projects(
     }
 
     return templates.TemplateResponse(
+        request,
         "projects/list.html",
         {
             "request": request,
@@ -154,6 +156,7 @@ async def new_project_form(request: Request, db: Session = Depends(get_db)):
     frameworks = framework_repo.get_all(user.tenant_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/new.html",
         {
             "request": request,
@@ -357,6 +360,7 @@ async def edit_project_form(
     frameworks = framework_repo.get_all(user.tenant_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_form.html",
         {
             "request": request,
@@ -413,6 +417,7 @@ async def update_project(
     db.refresh(project, ["client", "framework"])
 
     return templates.TemplateResponse(
+        request,
         "projects/_row.html",
         {
             "request": request,
@@ -456,6 +461,7 @@ async def new_segment_form(
         return RedirectResponse(url="/projects", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "projects/_segment_form.html",
         {
             "request": request,
@@ -490,6 +496,7 @@ async def create_segment(
     segment = repo.create_segment(user.tenant_id, project_id, name, description)
 
     return templates.TemplateResponse(
+        request,
         "projects/_segment_row.html",
         {
             "request": request,
@@ -540,6 +547,7 @@ async def add_review_scope_modal(
     unadded_review_scope_types = hc_repo.get_unadded_review_scope_types(project.id, project.framework_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_add_review_scope_modal.html",
         {
             "request": request,
@@ -587,6 +595,7 @@ async def add_review_scope(
     review_scope_rollup = {str(d.id): compute_review_scope_rollup(review_scope_stats[str(d.id)]) for d in review_scopes}
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_review_scopes_grid.html",
         {
             "request": request,
@@ -640,6 +649,7 @@ async def remove_review_scope(
     review_scope_rollup = {str(d.id): compute_review_scope_rollup(review_scope_stats[str(d.id)]) for d in review_scopes}
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_review_scopes_grid.html",
         {
             "request": request,
@@ -732,6 +742,7 @@ async def review_scope_detail(
     ]
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/review_scope_detail.html",
         {
             "request": request,
@@ -767,6 +778,7 @@ async def add_session_modal(
         return RedirectResponse(url=f"/projects/{project_id}", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_add_session_modal.html",
         {
             "request": request,
@@ -826,6 +838,7 @@ async def create_session(
         session_stats[str(s.id)] = hc_repo.get_session_stats(s.id)
 
     response = templates.TemplateResponse(
+        request,
         "projects/health_check/_sessions_list.html",
         {
             "request": request,
@@ -875,6 +888,7 @@ async def delete_session(
         session_stats[str(s.id)] = hc_repo.get_session_stats(s.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_sessions_list.html",
         {
             "request": request,
@@ -930,6 +944,7 @@ async def session_detail(
     ]
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/session_detail.html",
         {
             "request": request,
@@ -974,6 +989,7 @@ async def get_control_panel(
                             headers=htmx_toast("Control not found.", "error"))
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_control_panel.html",
         {
             "request": request,
@@ -1030,6 +1046,7 @@ async def update_control(
     review_scope = session.review_scope
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_control_panel.html",
         {
             "request": request,
@@ -1080,6 +1097,7 @@ async def add_evidence_modal(
     initial_tab = type or "text_note"
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_add_evidence_modal.html",
         {
             "request": request,
@@ -1166,6 +1184,7 @@ async def create_evidence(
     instance = hc_repo.get_control_instance_by_id(instance.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_evidence_list.html",
         {
             "request": request,
@@ -1216,6 +1235,7 @@ async def delete_evidence(
     instance = hc_repo.get_control_instance_by_id(instance.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_evidence_list.html",
         {
             "request": request,
@@ -1293,6 +1313,7 @@ async def update_control_with_observations(
     review_scope = hc_repo.get_review_scope_with_sessions(uuid.UUID(review_scope_id))
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_control_panel.html",
         {
             "request": request,
@@ -1338,6 +1359,7 @@ async def delete_observation(
     review_scope = hc_repo.get_review_scope_with_sessions(instance.audit_session.review_scope_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_control_panel.html",
         {
             "request": request,
@@ -1376,6 +1398,7 @@ async def get_observation_evidence(
     session = obs.control_instance.audit_session
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_hc_observation_evidence_panel.html",
         {
             "request": request,
@@ -1421,6 +1444,7 @@ async def add_observation_text_evidence(
     session = obs.control_instance.audit_session
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_hc_observation_evidence_panel.html",
         {
             "request": request,
@@ -1489,6 +1513,7 @@ async def add_observation_image_evidence(
     session = obs.control_instance.audit_session
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_hc_observation_evidence_panel.html",
         {
             "request": request,
@@ -1549,6 +1574,7 @@ async def delete_observation_evidence(
     session = obs.control_instance.audit_session
 
     return templates.TemplateResponse(
+        request,
         "projects/health_check/_hc_observation_evidence_panel.html",
         {
             "request": request,
@@ -1600,6 +1626,7 @@ async def get_control_row(
     responses_dict = {str(resp.framework_control_id): resp for resp in all_responses}
 
     return templates.TemplateResponse(
+        request,
         "projects/_control_row.html",
         {
             "request": request,
@@ -1649,6 +1676,7 @@ async def get_control_response_form(
     response = response_repo.get_by_control(project.id, control.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_control_response_form.html",
         {
             "request": request,
@@ -1719,6 +1747,7 @@ async def save_control_response(
 
     # Return the updated row + OOB tree icon update
     return templates.TemplateResponse(
+        request,
         "projects/_control_save_response.html",
         {
             "request": request,
@@ -1767,6 +1796,7 @@ async def get_control_assessment(
     response = response_repo.get_by_control(project.id, control.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_control_assessment.html",
         {
             "request": request,
@@ -1834,6 +1864,7 @@ async def submit_assessment_choice(
     responses_dict = {str(resp.framework_control_id): resp for resp in all_responses}
 
     return templates.TemplateResponse(
+        request,
         "projects/_control_row.html",
         {
             "request": request,
@@ -1893,6 +1924,7 @@ async def get_control_workflow(
     response = response_repo.get_by_control(project.id, control.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_control_workflow.html",
         {
             "request": request,
@@ -1985,6 +2017,7 @@ async def submit_workflow_answer(
     response = response_repo.get_by_control(project.id, control.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_workflow_step.html",
         {
             "request": request,
@@ -2036,6 +2069,7 @@ async def reset_workflow(
     response = response_repo.get_by_control(project.id, control.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_workflow_step.html",
         {
             "request": request,
@@ -2093,6 +2127,7 @@ async def get_workflow_step(
     response = response_repo.get_by_control(project.id, control.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_workflow_step.html",
         {
             "request": request,
@@ -2163,6 +2198,7 @@ async def detail_project(
             {"label": project.name, "url": None},
         ]
         return templates.TemplateResponse(
+            request,
             "projects/health_check/overview.html",
             {
                 "request": request,
@@ -2218,6 +2254,7 @@ async def detail_project(
             )
 
         return templates.TemplateResponse(
+            request,
             "projects/detail_parent.html",
             {
                 "request": request,
@@ -2250,6 +2287,7 @@ async def detail_project(
         progress_pct = (responded_count / total_controls * 100) if total_controls > 0 else 0
 
         return templates.TemplateResponse(
+            request,
             "projects/detail.html",
             {
                 "request": request,
@@ -2305,6 +2343,7 @@ async def get_control_details(
     observations = obs_repo.get_for_control(project.id, control.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_control_detail.html",
         {
             "request": request,
@@ -2406,6 +2445,7 @@ async def save_control_details(
     observations = obs_repo.get_for_control(project.id, control.id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_control_detail_with_tree_update.html",
         {
             "request": request,
@@ -2496,6 +2536,7 @@ async def get_evidence_panel(
         return HTMLResponse(content="Observation not found", status_code=404)
 
     return templates.TemplateResponse(
+        request,
         "projects/_evidence_panel.html",
         {"request": request, "observation": observation, "project_id": project_id},
     )
@@ -2521,6 +2562,7 @@ async def add_text_evidence(
     observation = obs_repo.get_observation(observation_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_evidence_panel.html",
         {"request": request, "observation": observation, "project_id": project_id},
         headers=htmx_toast("Note added successfully")
@@ -2565,6 +2607,7 @@ async def add_image_evidence(
     observation = obs_repo.get_observation(observation_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_evidence_panel.html",
         {"request": request, "observation": observation, "project_id": project_id},
         headers=htmx_toast("File uploaded successfully")
@@ -2597,6 +2640,7 @@ async def delete_evidence(
     observation = obs_repo.get_observation(observation_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_evidence_panel.html",
         {"request": request, "observation": observation, "project_id": project_id},
     )
@@ -2627,6 +2671,7 @@ async def get_project_members(project_id: str, request: Request, db: Session = D
     auditors = user_repo.get_auditors(user.tenant_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_share_modal.html",
         {
             "request": request,
@@ -2680,6 +2725,7 @@ async def add_project_member(project_id: str, request: Request, db: Session = De
     auditors = user_repo.get_auditors(user.tenant_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_share_modal.html",
         {
             "request": request,
@@ -2723,6 +2769,7 @@ async def remove_project_member(
     auditors = user_repo.get_auditors(user.tenant_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_share_modal.html",
         {
             "request": request,
@@ -2769,6 +2816,7 @@ async def transfer_project_ownership(
     auditors = user_repo.get_auditors(user.tenant_id)
 
     return templates.TemplateResponse(
+        request,
         "projects/_share_modal.html",
         {
             "request": request,

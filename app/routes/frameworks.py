@@ -24,6 +24,7 @@ async def list_frameworks(request: Request, db: Session = Depends(get_db)):
     frameworks = repo.get_all(user.tenant_id)
 
     return templates.TemplateResponse(
+        request,
         "frameworks/list.html",
         {
             "request": request,
@@ -49,6 +50,7 @@ async def detail_framework(
         return RedirectResponse(url="/frameworks", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "frameworks/detail.html",
         {
             "request": request,

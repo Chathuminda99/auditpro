@@ -71,6 +71,7 @@ async def dashboard(request: Request, db: Session = Depends(get_db)):
         })
 
     return templates.TemplateResponse(
+        request,
         "dashboard/index.html",
         {
             "request": request,

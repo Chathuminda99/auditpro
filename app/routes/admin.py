@@ -20,6 +20,7 @@ async def components_hub(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/auth/login", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "components_hub.html",
         {
             "request": request,
@@ -36,6 +37,7 @@ async def components_demo(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/auth/login", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "components_demo.html",
         {
             "request": request,
@@ -52,6 +54,7 @@ async def components_showcase(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/auth/login", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "components_showcase.html",
         {
             "request": request,
@@ -68,6 +71,7 @@ async def components_showcase_phase2(request: Request, db: Session = Depends(get
         return RedirectResponse(url="/auth/login", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "components_showcase_phase2.html",
         {
             "request": request,
@@ -84,6 +88,7 @@ async def components_showcase_phase3(request: Request, db: Session = Depends(get
         return RedirectResponse(url="/auth/login", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "components_showcase_phase3.html",
         {
             "request": request,
@@ -117,6 +122,7 @@ async def list_controls(request: Request, db: Session = Depends(get_db)):
                 })
 
     return templates.TemplateResponse(
+        request,
         "admin/controls_list.html",
         {
             "request": request,
@@ -160,6 +166,7 @@ async def edit_control(control_id: str, request: Request, db: Session = Depends(
         raise HTTPException(status_code=404, detail="Control not found")
 
     return templates.TemplateResponse(
+        request,
         "admin/control_edit.html",
         {
             "request": request,
@@ -229,6 +236,7 @@ async def save_control(
         })
     }
     return templates.TemplateResponse(
+        request,
         "admin/control_edit.html",
         {
             "request": request,

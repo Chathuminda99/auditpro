@@ -30,6 +30,7 @@ SECURITY_LOGGER = logging.getLogger("auditpro.security")
 async def login_page(request: Request):
     """Render login page."""
     return templates.TemplateResponse(
+        request,
         "auth/login.html",
         {"request": request, "azure_ad_enabled": settings.azure_ad_enabled},
     )
@@ -49,6 +50,7 @@ async def login(
     if not user:
         SECURITY_LOGGER.warning("login_failed email=%s", normalized_email)
         return templates.TemplateResponse(
+            request,
             "auth/login.html",
             {
                 "request": request,
@@ -194,4 +196,4 @@ async def pending_approval(request: Request):
     if user and user.is_active:
         return RedirectResponse(url="/dashboard", status_code=302)
 
-    return templates.TemplateResponse("auth/pending_approval.html", {"request": request})
+    return templates.TemplateResponse(request, "auth/pending_approval.html", {})

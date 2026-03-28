@@ -42,6 +42,7 @@ async def list_clients(
     if is_htmx:
         # Return just the table rows
         return templates.TemplateResponse(
+            request,
             "clients/_clients_table.html",
             {
                 "request": request,
@@ -60,6 +61,7 @@ async def list_clients(
     }
 
     return templates.TemplateResponse(
+        request,
         "clients/list.html",
         {
             "request": request,
@@ -81,6 +83,7 @@ async def new_client_form(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse(url="/dashboard", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "clients/_form.html",
         {
             "request": request,
@@ -112,6 +115,7 @@ async def create_client(request: Request, db: Session = Depends(get_db)):
     )
 
     return templates.TemplateResponse(
+        request,
         "clients/_row.html",
         {
             "request": request,
@@ -150,6 +154,7 @@ async def update_client(
         return RedirectResponse(url="/clients", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "clients/_row.html",
         {
             "request": request,
@@ -192,6 +197,7 @@ async def search_clients(
     results = repo.search(user.tenant_id, q) if q.strip() else []
 
     return templates.TemplateResponse(
+        request,
         "clients/_search_results.html",
         {
             "request": request,
@@ -220,6 +226,7 @@ async def edit_client_form_detail(
         return RedirectResponse(url="/clients", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "clients/_form.html",
         {
             "request": request,
@@ -247,6 +254,7 @@ async def detail_client(
         return RedirectResponse(url="/clients", status_code=302)
 
     return templates.TemplateResponse(
+        request,
         "clients/detail.html",
         {
             "request": request,

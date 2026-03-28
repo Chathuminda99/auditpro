@@ -76,8 +76,9 @@ def create_app() -> FastAPI:
         template_map = {403: "errors/403.html", 404: "errors/404.html"}
         template_name = template_map.get(exc.status_code, "errors/500.html")
         return templates.TemplateResponse(
+            request,
             template_name,
-            {"request": request, "status_code": exc.status_code, "detail": exc.detail},
+            {"status_code": exc.status_code, "detail": exc.detail},
             status_code=exc.status_code,
         )
 
@@ -90,6 +91,7 @@ def create_app() -> FastAPI:
                 headers=htmx_toast("An unexpected error occurred. Please try again.", "error"),
             )
         return templates.TemplateResponse(
+            request,
             "errors/500.html",
             {"request": request, "status_code": 500, "detail": "Internal server error"},
             status_code=500,
