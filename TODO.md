@@ -35,6 +35,8 @@
   - [ ] Make Check Points table sticky
   - [ ] Make observation adding section sticky
   - [ ] Add parent requirement in left control tree view.
+- [ ] Change the card color of Requiremets, Audit Procedure and Checkpoint.
+
 
 ## Features & Functionality
 
