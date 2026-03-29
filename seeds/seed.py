@@ -6,7 +6,9 @@ import uuid
 from sqlalchemy.orm import Session
 
 # Add app directory to path
-sys.path.insert(0, "/home/lasitha/Documents/Projects/Themis-Revamp")
+import os
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.database import SessionLocal, engine
 from app.models import (
@@ -18,9 +20,7 @@ from app.models import (
     Framework,
     FrameworkSection,
     FrameworkControl,
-    ChecklistItem,
     Project,
-    ProjectStatus,
     ProjectType,
 )
 from app.models.user import UserRole
@@ -141,135 +141,13 @@ def seed_database():
             beta_id = beta.id if beta else None
             print("✓ Clients already exist")
 
-        # Check if PCI DSS exists specifically
-        pci_exists = db.query(Framework).filter(
+        # Check if PCI DSS framework exists, create if not
+        pci_framework = db.query(Framework).filter(
             Framework.tenant_id == tenant_id,
             Framework.name == "PCI DSS V4.0.1"
         ).first()
 
-        if not pci_exists:
-            # Create ISO 27001 framework
-            iso_id = uuid.uuid4()
-            iso = Framework(
-                id=iso_id,
-                tenant_id=tenant_id,
-                name="ISO 27001:2022",
-                description="Information security management standard",
-                version="2022",
-            )
-            db.add(iso)
-            db.flush()
-
-            # Create ISO 27001 sections
-            iso_a5_id = uuid.uuid4()
-            iso_a5 = FrameworkSection(
-                id=iso_a5_id,
-                framework_id=iso_id,
-                parent_section_id=None,
-                name="A.5 Organizational Controls",
-                description="Controls for organization-wide policies",
-                order=1,
-            )
-            db.add(iso_a5)
-            db.flush()
-
-            iso_a8_id = uuid.uuid4()
-            iso_a8 = FrameworkSection(
-                id=iso_a8_id,
-                framework_id=iso_id,
-                parent_section_id=None,
-                name="A.8 Technological Controls",
-                description="Technical security controls",
-                order=2,
-            )
-            db.add(iso_a8)
-            db.flush()
-
-            # Add controls to ISO A.5
-            iso_a5_1 = FrameworkControl(
-                id=uuid.uuid4(),
-                framework_section_id=iso_a5_id,
-                control_id="A.5.1",
-                name="Policies for information security",
-                description="Information security policies established",
-            )
-            iso_a5_2 = FrameworkControl(
-                id=uuid.uuid4(),
-                framework_section_id=iso_a5_id,
-                control_id="A.5.2",
-                name="Information security roles and responsibilities",
-                description="Clear roles and responsibilities defined",
-            )
-            db.add_all([iso_a5_1, iso_a5_2])
-            db.flush()
-
-            # Add controls to ISO A.8
-            iso_a8_1 = FrameworkControl(
-                id=uuid.uuid4(),
-                framework_section_id=iso_a8_id,
-                control_id="A.8.1",
-                name="User endpoint devices",
-                description="Endpoint device security implemented",
-            )
-            db.add(iso_a8_1)
-            db.flush()
-
-            # Add checklist items
-            db.add(ChecklistItem(
-                id=uuid.uuid4(),
-                framework_control_id=iso_a5_1.id,
-                description="Information security policy document reviewed",
-                is_mandatory=True,
-            ))
-            db.add(ChecklistItem(
-                id=uuid.uuid4(),
-                framework_control_id=iso_a5_2.id,
-                description="CISO appointed and documented",
-                is_mandatory=True,
-            ))
-
-            db.commit()
-            iso_framework_id = iso_id
-            print("✓ Created ISO 27001:2022 framework with sections and controls")
-
-            # Create SOC 2 framework
-            soc2_id = uuid.uuid4()
-            soc2 = Framework(
-                id=soc2_id,
-                tenant_id=tenant_id,
-                name="SOC 2 Type II",
-                description="System and Organization Controls framework",
-                version="2023",
-            )
-            db.add(soc2)
-            db.flush()
-
-            # Create SOC 2 sections
-            soc2_cc1_id = uuid.uuid4()
-            soc2_cc1 = FrameworkSection(
-                id=soc2_cc1_id,
-                framework_id=soc2_id,
-                parent_section_id=None,
-                name="CC1 Control Environment",
-                description="Foundation for security controls",
-                order=1,
-            )
-            db.add(soc2_cc1)
-            db.flush()
-
-            # Add controls to SOC 2
-            soc2_cc1_1 = FrameworkControl(
-                id=uuid.uuid4(),
-                framework_section_id=soc2_cc1_id,
-                control_id="CC1.1",
-                name="Demonstrates Commitment to Integrity",
-                description="COSO Principle 1 implementation",
-            )
-            db.add(soc2_cc1_1)
-            db.commit()
-            soc2_framework_id = soc2_id
-            print("✓ Created SOC 2 Type II framework with sections and controls")
-
+        if not pci_framework:
             # Create PCI DSS V4.0.1 framework (sections/controls seeded separately below)
             pci_id = uuid.uuid4()
             pci = Framework(
@@ -284,22 +162,8 @@ def seed_database():
             pci_framework_id = pci_id
             print("✓ Created PCI DSS V4.0.1 framework")
         else:
-            iso_framework = db.query(Framework).filter(
-                Framework.tenant_id == tenant_id,
-                Framework.name == "ISO 27001:2022"
-            ).first()
-            soc2_framework = db.query(Framework).filter(
-                Framework.tenant_id == tenant_id,
-                Framework.name == "SOC 2 Type II"
-            ).first()
-            pci_framework = db.query(Framework).filter(
-                Framework.tenant_id == tenant_id,
-                Framework.name == "PCI DSS V4.0.1"
-            ).first()
-            iso_framework_id = iso_framework.id if iso_framework else None
-            soc2_framework_id = soc2_framework.id if soc2_framework else None
-            pci_framework_id = pci_framework.id if pci_framework else None
-            print("✓ Frameworks already exist")
+            pci_framework_id = pci_framework.id
+            print("✓ PCI DSS V4.0.1 framework already exists")
 
         # ── Seed PCI DSS Requirement 2 sections/controls (idempotent) ──
         pci_has_sections = db.query(FrameworkSection).filter(
@@ -2788,67 +2652,27 @@ def seed_database():
             if pci_framework_id:
                 print("✓ PCI DSS category types already exist")
 
-        # Check if projects exist
-        existing_projects = db.query(Project).filter(
-            Project.tenant_id == tenant_id
-        ).count()
-
-        if existing_projects == 0 and acme_id and iso_framework_id:
-            # Create projects (admin user is owner)
-            project1 = Project(
-                id=uuid.uuid4(),
-                tenant_id=tenant_id,
-                client_id=acme_id,
-                framework_id=iso_framework_id,
-                owner_id=admin_user.id,
-                name="Acme ISO 27001 Assessment",
-                description="ISO 27001 compliance assessment for Acme Corp",
-                status=ProjectStatus.IN_PROGRESS,
-                project_type=ProjectType.STANDARD_AUDIT,
-            )
-
-            if beta_id and soc2_framework_id:
-                project2 = Project(
-                    id=uuid.uuid4(),
-                    tenant_id=tenant_id,
-                    client_id=beta_id,
-                    framework_id=soc2_framework_id,
-                    owner_id=admin_user.id,
-                    name="Beta SOC 2 Readiness",
-                    description="SOC 2 Type II readiness assessment for Beta Ltd",
-                    status=ProjectStatus.DRAFT,
-                    project_type=ProjectType.STANDARD_AUDIT,
-                )
-                db.add_all([project1, project2])
-            else:
-                db.add(project1)
-
+        # Back-fill owner_id on existing projects that lack it
+        projects_without_owner = db.query(Project).filter(
+            Project.tenant_id == tenant_id,
+            Project.owner_id.is_(None),
+        ).all()
+        if projects_without_owner:
+            for p in projects_without_owner:
+                p.owner_id = admin_user.id
             db.commit()
-            print("✓ Created projects")
-        else:
-            # Back-fill owner_id on existing projects that lack it
-            projects_without_owner = db.query(Project).filter(
-                Project.tenant_id == tenant_id,
-                Project.owner_id.is_(None),
-            ).all()
-            if projects_without_owner:
-                for p in projects_without_owner:
-                    p.owner_id = admin_user.id
-                db.commit()
-                print(f"✓ Back-filled owner_id on {len(projects_without_owner)} existing project(s)")
+            print(f"✓ Back-filled owner_id on {len(projects_without_owner)} existing project(s)")
 
-            # Back-fill project_type on existing projects that lack it
-            projects_without_type = db.query(Project).filter(
-                Project.tenant_id == tenant_id,
-                Project.project_type.is_(None),
-            ).all()
-            if projects_without_type:
-                for p in projects_without_type:
-                    p.project_type = ProjectType.STANDARD_AUDIT
-                db.commit()
-                print(f"✓ Back-filled project_type on {len(projects_without_type)} existing project(s)")
-            else:
-                print("✓ Projects already exist")
+        # Back-fill project_type on existing projects that lack it
+        projects_without_type = db.query(Project).filter(
+            Project.tenant_id == tenant_id,
+            Project.project_type.is_(None),
+        ).all()
+        if projects_without_type:
+            for p in projects_without_type:
+                p.project_type = ProjectType.STANDARD_AUDIT
+            db.commit()
+            print(f"✓ Back-filled project_type on {len(projects_without_type)} existing project(s)")
 
         print("\n✅ Database seeded successfully!")
 
